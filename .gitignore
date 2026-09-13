@@ -1,0 +1,43 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+/local.properties
+*.jks
+*.keystore
+*.p12
+.env
+
+# ── Credentials & secrets (never commit) ───────────────
+Service-account.json
+*.key
+*.pem
+
+# ── Local tooling / IDE ─────────────────────────────────
+.kotlin/
+.idea/
+
+# ── Release & store artifacts ───────────────────────────
+PDFToolkit_PlayStore_Release.zip
+PLAY_STORE_RELEASE_PACKAGE/
+RELEASE_OUTPUTS/
+scratch/
+app/release/
+*.aab
+*.apk
+build_playstore_screenshots.py
+build_tablet_screenshots.py
+build_playstore_store_listing_assets.py
+package_play_store_release.py
+playstore_cli_deploy.py

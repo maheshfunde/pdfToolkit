@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- App cache directory (for temp files) -->
+    <cache-path
+        name="pdf_cache"
+        path="pdf_output/" />
+    <cache-path
+        name="camera_images"
+        path="camera_images/" />
+    <!-- App files directory -->
+    <files-path
+        name="pdf_files"
+        path="." />
+    <external-path
+        name="downloads"
+        path="Download/" />
+    <!-- Downloads directory (for legacy storage) -->
+    <external-path
+        name="downloads"
+        path="Download/PDFToolkit/" />
+    <!-- Documents directory -->
+    <external-path
+        name="documents"
+        path="Documents/PDFToolkit/" />
+    <external-files-path
+        name="external_files"
+        path="." />
+    <cache-path
+        name="cache"
+        path="." />
+</paths>

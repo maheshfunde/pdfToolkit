@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Base App Theme -->
+    <style name="Theme.PDFToolkit" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <!-- Splash Theme -->
+    <style name="Theme.PDFToolkit.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#252525</item>
+        <item name="postSplashScreenTheme">@style/Theme.PDFToolkit</item>
+    </style>
+
+    <!-- Crop Activity Theme (renamed to avoid conflicts) -->
+    <style name="Theme.PDFToolkit.Crop" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">#667EEA</item>
+        <item name="colorPrimaryDark">#764BA2</item>
+        <item name="colorAccent">#667EEA</item>
+    </style>
+
+</resources>
