@@ -2,7 +2,17 @@ package com.yashodatech.pdftoolkit
 
 import com.yashodatech.pdftoolkit.components.LiquidHeader
 import com.yashodatech.pdftoolkit.components.ModernGlassLoader
+import com.yashodatech.pdftoolkit.components.PrecisionGradientButton
 import com.yashodatech.pdftoolkit.theme.GradientViewVibrant
+import com.yashodatech.pdftoolkit.theme.ErrorRed
+import com.yashodatech.pdftoolkit.theme.InkBorder
+import com.yashodatech.pdftoolkit.theme.InkFaint
+import com.yashodatech.pdftoolkit.theme.PrecisionInverseOnSurface
+import com.yashodatech.pdftoolkit.theme.PrecisionInverseSurface
+import com.yashodatech.pdftoolkit.theme.PrecisionOnSurface
+import com.yashodatech.pdftoolkit.theme.PrecisionSurface
+import com.yashodatech.pdftoolkit.theme.Vermilion
+import com.yashodatech.pdftoolkit.theme.VermilionDeep
 
 import android.content.Context
 import android.content.Intent
@@ -87,19 +97,54 @@ import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo
 import com.itextpdf.kernel.pdf.canvas.parser.listener.LocationTextExtractionStrategy
 
 
-private val GradientView = listOf(Color(0xFFE4572E), Color(0xFFB23F1F))
-private val AccentView = Color(0xFFE4572E)
+private val GradientView = listOf(Vermilion, VermilionDeep)
+private val AccentView = Vermilion
 
 enum class ViewMode { CONTINUOUS, SINGLE_PAGE }
+
+// ── Reading surfaces, folded into the Precision (Light-primary) system ──
+// The reader is the one surface that renders actual page "paper", so its
+// three moods sit on the platform's own paper/ink tiers — Light paper,
+// the system's inverse (Night) dark, and an aged Sepia stock. Text stays a
+// declared ink so nothing is invisible against its surface in any theme.
+private val PaperLight   = PrecisionSurface      // light paper (F8F9FF)
+private val PaperInk     = PrecisionOnSurface    // dark ink text on Light
+private val NightBg      = PrecisionInverseSurface // night reading (dark)
+private val NightInk     = PrecisionInverseOnSurface
+private val SepiaBg      = Color(0xFFE8D4B8)     // aged paper
+private val SepiaInk     = Color(0xFF5B4636)     // sepia-ink text
+
+// Raised surfaces sit one step off the page (cards, bars, chips).
+private val LightPageSurface = Color(0xFFF1ECE3)   // warm paper step
+private val NightPageSurface = Color(0xFF31425C)   // lighter navy step for night
+private val SepiaPageSurface = Color(0xFFE0C9A6)   // deeper aged paper
+
+private fun readingPageBg(theme: ReadingTheme) = when (theme) {
+    ReadingTheme.LIGHT -> PaperLight
+    ReadingTheme.DARK -> NightBg
+    ReadingTheme.SEPIA -> SepiaBg
+}
+private fun readingSurface(theme: ReadingTheme) = when (theme) {
+    ReadingTheme.LIGHT -> LightPageSurface
+    ReadingTheme.DARK -> NightPageSurface
+    ReadingTheme.SEPIA -> SepiaPageSurface
+}
+private fun readingInk(theme: ReadingTheme) = when (theme) {
+    ReadingTheme.LIGHT -> PaperInk
+    ReadingTheme.DARK -> NightInk
+    ReadingTheme.SEPIA -> SepiaInk
+}
+private fun readingInk(theme: ReadingTheme, alpha: Float) =
+    readingInk(theme).copy(alpha = alpha)
 
 enum class ReadingTheme(
     val label: String,
     val bgColor: Color,
     val icon: ImageVector
 ) {
-    LIGHT("Light", Color.White, Icons.Rounded.LightMode),
-    DARK("Dark", Color(0xFF1A1A2E), Icons.Rounded.DarkMode),
-    SEPIA("Sepia", Color(0xFFF5E6CA), Icons.Rounded.Palette)
+    LIGHT("Light", PaperLight, Icons.Rounded.LightMode),
+    DARK("Dark", NightBg, Icons.Rounded.DarkMode),
+    SEPIA("Sepia", SepiaBg, Icons.Rounded.Palette)
 }
 
 data class SearchResult(
@@ -113,6 +158,67 @@ data class HighlightRect(
     val widthRatio: Float,
     val heightRatio: Float
 )
+
+// ═══════════════════════════════════════════════════════════
+//  OVERFLOW BOTTOM SHEET ROWS (Reading / Navigate / Share)
+//  Grouped sheet, folded into the reading surface.
+// ═══════════════════════════════════════════════════════════
+
+/** Section eyebrow inside the overflow sheet — small vermilion group label. */
+@Composable
+private fun SheetSectionLabel(label: String, readingTheme: ReadingTheme) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelMedium,
+        color = Vermilion,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 20.dp, end = 20.dp, top = 6.dp, bottom = 2.dp)
+    )
+}
+
+/** One actionable sheet row: soft tonal icon tile + label, folded into surfaces. */
+@Composable
+private fun SheetActionRow(
+    title: String,
+    icon: ImageVector,
+    readingTheme: ReadingTheme,
+    accent: Boolean = false,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(
+                    if (accent) Vermilion.copy(alpha = 0.12f)
+                    else readingInk(readingTheme, 0.08f)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (accent) Vermilion else readingInk(readingTheme, 0.75f),
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        Spacer(Modifier.width(14.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = readingInk(readingTheme)
+        )
+    }
+}
 
 
 // ═══════════════════════════════════════════════════════════
@@ -354,6 +460,7 @@ fun ViewPdfScreen(onBack: () -> Unit, initialUri: Uri? = null) {
     var sourceSizeText by remember { mutableStateOf("") }
     var totalPages by remember { mutableIntStateOf(0) }
     var isLoading by remember { mutableStateOf(false) }
+    var openStatus by remember { mutableStateOf("Opening…") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var rendererHolder by remember { mutableStateOf<PdfRendererHolder?>(null) }
     val listState = rememberLazyListState()
@@ -414,6 +521,7 @@ fun ViewPdfScreen(onBack: () -> Unit, initialUri: Uri? = null) {
         }
 
         isLoading = true
+        openStatus = "Opening PDF…"
         scope.launch {
             try {
                 val holder = withContext(Dispatchers.IO) {
@@ -422,6 +530,7 @@ fun ViewPdfScreen(onBack: () -> Unit, initialUri: Uri? = null) {
                     PdfRendererHolder(fd, PdfRenderer(fd))
                 }
                 rendererHolder = holder; totalPages = holder.pageCount
+                openStatus = "Extracting searchable text…"
                 isLoading = false
 
                 isExtractingText = true
@@ -498,17 +607,7 @@ fun ViewPdfScreen(onBack: () -> Unit, initialUri: Uri? = null) {
         goToPage(searchResults[currentSearchResultIndex].pageIndex)
     }
 
-    val bgColor = when (readingTheme) {
-        ReadingTheme.LIGHT -> MaterialTheme.colorScheme.background
-        ReadingTheme.DARK -> Color(0xFF1A1A2E)
-        ReadingTheme.SEPIA -> Color(0xFFF5E6CA)
-    }
-
-    val contentColor = when (readingTheme) {
-        ReadingTheme.DARK -> Color.White
-        ReadingTheme.SEPIA -> Color(0xFF5B4636)
-        ReadingTheme.LIGHT -> MaterialTheme.colorScheme.onBackground
-    }
+    val bgColor = readingPageBg(readingTheme)
 
     Scaffold(
         topBar = {
@@ -535,7 +634,7 @@ fun ViewPdfScreen(onBack: () -> Unit, initialUri: Uri? = null) {
                                                     append(" • Page ${currentVisiblePage + 1}")
                                             },
                                             fontSize = 12.sp,
-                                            color = Color.White.copy(alpha = 0.7f)
+                                            color = readingInk(readingTheme, 0.7f)
                                         )
                                     }
                                 } else {
@@ -553,7 +652,8 @@ fun ViewPdfScreen(onBack: () -> Unit, initialUri: Uri? = null) {
                                     IconButton(onClick = { showSearchBar = !showSearchBar }) {
                                         Icon(
                                             Icons.Rounded.Search, "Search",
-                                            tint = if (showSearchBar) Color.Yellow else Color.White
+                                            tint = if (showSearchBar) AccentView
+                                            else readingInk(readingTheme, 0.7f)
                                         )
                                     }
 
@@ -574,142 +674,195 @@ fun ViewPdfScreen(onBack: () -> Unit, initialUri: Uri? = null) {
                                         Icon(
                                             if (isBookmarked) Icons.Rounded.Bookmark
                                             else Icons.Rounded.BookmarkBorder,
-                                            "Bookmark", tint = Color.White
+                                            "Bookmark",
+                                            tint = if (isBookmarked) AccentView
+                                            else readingInk(readingTheme, 0.7f)
                                         )
                                     }
 
                                     // More menu
                                     var showMenu by remember { mutableStateOf(false) }
                                     IconButton(onClick = { showMenu = true }) {
-                                        Icon(Icons.Rounded.MoreVert, "More", tint = Color.White)
+                                        Icon(Icons.Rounded.MoreVert, "More", tint = readingInk(readingTheme, 0.85f))
                                     }
-                                    DropdownMenu(
-                                        expanded = showMenu,
-                                        onDismissRequest = { showMenu = false }
-                                    ) {
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    when (viewMode) {
-                                                        ViewMode.CONTINUOUS -> "Single Page Mode"
-                                                        ViewMode.SINGLE_PAGE -> "Continuous Mode"
-                                                    }
+                                    if (showMenu) {
+                                        ModalBottomSheet(
+                                            onDismissRequest = { showMenu = false },
+                                            containerColor = readingSurface(readingTheme),
+                                            contentColor = readingInk(readingTheme),
+                                            dragHandle = {
+                                                BottomSheetDefaults.DragHandle(
+                                                    color = readingInk(readingTheme, 0.3f)
                                                 )
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    when (viewMode) {
-                                                        ViewMode.CONTINUOUS -> Icons.Rounded.ViewDay
-                                                        ViewMode.SINGLE_PAGE -> Icons.Rounded.ViewAgenda
-                                                    }, null
-                                                )
-                                            },
-                                            onClick = {
-                                                viewMode = when (viewMode) {
-                                                    ViewMode.CONTINUOUS -> {
-                                                        currentPage = currentVisiblePage
-                                                        ViewMode.SINGLE_PAGE
-                                                    }
-                                                    ViewMode.SINGLE_PAGE -> {
-                                                        scope.launch { listState.scrollToItem(currentPage) }
-                                                        ViewMode.CONTINUOUS
-                                                    }
-                                                }
-                                                scale = 1f; offsetX = 0f; offsetY = 0f
-                                                showMenu = false
                                             }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text("Go to Page") },
-                                            leadingIcon = { Icon(Icons.Rounded.Pin, null) },
-                                            onClick = { showGoToPage = true; showMenu = false }
-                                        )
-                                        if (bookmarks.isNotEmpty()) {
-                                            DropdownMenuItem(
-                                                text = { Text("Bookmarks (${bookmarks.size})") },
-                                                leadingIcon = { Icon(Icons.Rounded.Bookmarks, null) },
+                                        ) {
+                                            // Header
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 4.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(40.dp)
+                                                        .clip(RoundedCornerShape(12.dp))
+                                                        .background(Vermilion.copy(alpha = 0.12f)),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Icon(
+                                                        Icons.Rounded.Article,
+                                                        null,
+                                                        tint = Vermilion,
+                                                        modifier = Modifier.size(22.dp)
+                                                    )
+                                                }
+                                                Spacer(Modifier.width(12.dp))
+                                                Column {
+                                                    Text(
+                                                        "PDF actions",
+                                                        style = MaterialTheme.typography.titleMedium,
+                                                        color = readingInk(readingTheme),
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                    Text(
+                                                        "Navigate, read, and share",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = readingInk(readingTheme, 0.6f)
+                                                    )
+                                                }
+                                            }
+
+                                            SheetSectionLabel("Navigate", readingTheme)
+                                            SheetActionRow(
+                                                title = when (viewMode) {
+                                                    ViewMode.CONTINUOUS -> "Single Page Mode"
+                                                    ViewMode.SINGLE_PAGE -> "Continuous Mode"
+                                                },
+                                                icon = when (viewMode) {
+                                                    ViewMode.CONTINUOUS -> Icons.Rounded.ViewDay
+                                                    ViewMode.SINGLE_PAGE -> Icons.Rounded.ViewAgenda
+                                                },
+                                                readingTheme = readingTheme,
                                                 onClick = {
-                                                    showBookmarks = true; showMenu = false
+                                                    viewMode = when (viewMode) {
+                                                        ViewMode.CONTINUOUS -> {
+                                                            currentPage = currentVisiblePage
+                                                            ViewMode.SINGLE_PAGE
+                                                        }
+                                                        ViewMode.SINGLE_PAGE -> {
+                                                            scope.launch { listState.scrollToItem(currentPage) }
+                                                            ViewMode.CONTINUOUS
+                                                        }
+                                                    }
+                                                    scale = 1f; offsetX = 0f; offsetY = 0f
+                                                    showMenu = false
                                                 }
                                             )
-                                        }
-                                        HorizontalDivider()
-                                        DropdownMenuItem(
-                                            text = { Text("Reading Theme") },
-                                            leadingIcon = { Icon(Icons.Rounded.Palette, null) },
-                                            onClick = {
-                                                showThemeSelector = true; showMenu = false
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    if (showThumbnails) "Hide Thumbnails"
-                                                    else "Show Thumbnails"
+                                            SheetActionRow(
+                                                title = "Go to Page",
+                                                icon = Icons.Rounded.Pin,
+                                                readingTheme = readingTheme,
+                                                onClick = { showGoToPage = true; showMenu = false }
+                                            )
+                                            if (bookmarks.isNotEmpty()) {
+                                                SheetActionRow(
+                                                    title = "Bookmarks (${bookmarks.size})",
+                                                    icon = Icons.Rounded.Bookmarks,
+                                                    readingTheme = readingTheme,
+                                                    onClick = { showBookmarks = true; showMenu = false }
                                                 )
-                                            },
-                                            leadingIcon = { Icon(Icons.Rounded.GridView, null) },
-                                            onClick = {
-                                                showThumbnails = !showThumbnails; showMenu = false
                                             }
-                                        )
-                                        HorizontalDivider()
-                                        DropdownMenuItem(
-                                            text = { Text("Share PDF") },
-                                            leadingIcon = { Icon(Icons.Outlined.Share, null) },
-                                            onClick = {
-                                                sourceUri?.let { uri ->
-                                                    context.startActivity(
-                                                        Intent.createChooser(
-                                                            Intent(Intent.ACTION_SEND).apply {
-                                                                type = "application/pdf"
-                                                                putExtra(Intent.EXTRA_STREAM, uri)
-                                                                flags =
-                                                                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                                            }, "Share PDF"
-                                                        )
-                                                    )
-                                                }; showMenu = false
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text("Open in Other App") },
-                                            leadingIcon = { Icon(Icons.Outlined.OpenInNew, null) },
-                                            onClick = {
-                                                sourceUri?.let { uri ->
-                                                    try {
+
+                                            SheetSectionLabel("Reading", readingTheme)
+                                            SheetActionRow(
+                                                title = "Reading Theme",
+                                                icon = Icons.Rounded.Palette,
+                                                readingTheme = readingTheme,
+                                                onClick = { showThemeSelector = true; showMenu = false }
+                                            )
+                                            SheetActionRow(
+                                                title = if (showThumbnails) "Hide Thumbnails"
+                                                else "Show Thumbnails",
+                                                icon = Icons.Rounded.GridView,
+                                                readingTheme = readingTheme,
+                                                accent = showThumbnails,
+                                                onClick = {
+                                                    showThumbnails = !showThumbnails; showMenu = false
+                                                }
+                                            )
+
+                                            SheetSectionLabel("Share", readingTheme)
+                                            SheetActionRow(
+                                                title = "Share PDF",
+                                                icon = Icons.Outlined.Share,
+                                                readingTheme = readingTheme,
+                                                onClick = {
+                                                    sourceUri?.let { uri ->
                                                         context.startActivity(
-                                                            Intent(Intent.ACTION_VIEW).apply {
-                                                                setDataAndType(
-                                                                    uri,
-                                                                    "application/pdf"
-                                                                )
-                                                                flags =
-                                                                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                                            })
-                                                    } catch (_: Exception) {
-                                                        Toast.makeText(
-                                                            context,
-                                                            "No app found",
-                                                            Toast.LENGTH_SHORT
-                                                        ).show()
-                                                    }
-                                                }; showMenu = false
-                                            }
-                                        )
+                                                            Intent.createChooser(
+                                                                Intent(Intent.ACTION_SEND).apply {
+                                                                    type = "application/pdf"
+                                                                    putExtra(Intent.EXTRA_STREAM, uri)
+                                                                    flags =
+                                                                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                                                }, "Share PDF"
+                                                            )
+                                                        )
+                                                    }; showMenu = false
+                                                }
+                                            )
+                                            SheetActionRow(
+                                                title = "Open in Other App",
+                                                icon = Icons.Outlined.OpenInNew,
+                                                readingTheme = readingTheme,
+                                                onClick = {
+                                                    sourceUri?.let { uri ->
+                                                        try {
+                                                            context.startActivity(
+                                                                Intent(Intent.ACTION_VIEW).apply {
+                                                                    setDataAndType(
+                                                                        uri,
+                                                                        "application/pdf"
+                                                                    )
+                                                                    flags =
+                                                                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                                                })
+                                                        } catch (_: Exception) {
+                                                            Toast.makeText(
+                                                                context,
+                                                                "No app found",
+                                                                Toast.LENGTH_SHORT
+                                                            ).show()
+                                                        }
+                                                    }; showMenu = false
+                                                }
+                                            )
+
+                                            Spacer(Modifier.height(8.dp))
+                                            Spacer(Modifier.navigationBarsPadding())
+                                        }
                                     }
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = AccentView,
-                                titleContentColor = Color.White,
-                                navigationIconContentColor = Color.White
+                                containerColor = readingSurface(readingTheme),
+                                titleContentColor = readingInk(readingTheme),
+                                navigationIconContentColor = readingInk(readingTheme),
+                                actionIconContentColor = readingInk(readingTheme, 0.85f)
                             )
+                        )
+
+                        // Vermilion hairline — the signature stamp under the bar
+                        Box(
+                            Modifier.fillMaxWidth().height(2.dp)
+                                .background(Brush.horizontalGradient(GradientView))
                         )
 
                         // Search bar
                         if (showSearchBar) {
                             PdfSearchBar(
+                                readingTheme = readingTheme,
                                 query = searchQuery,
                                 onQueryChange = { searchQuery = it },
                                 onSearch = { performSearch(searchQuery) },
@@ -747,34 +900,20 @@ fun ViewPdfScreen(onBack: () -> Unit, initialUri: Uri? = null) {
                     }
                 }
 
-                isLoading -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator(
-                                color = AccentView,
-                                modifier = Modifier.size(48.dp)
-                            )
-                            Spacer(Modifier.height(16.dp))
-                            Text(
-                                "Opening PDF…", fontSize = 14.sp,
-                                color = contentColor.copy(alpha = 0.5f)
-                            )
-                        }
-                    }
-                }
+                isLoading -> Box(Modifier.fillMaxSize())
 
                 errorMessage != null -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
                                 Icons.Rounded.ErrorOutline, null,
-                                tint = Color.Red.copy(alpha = 0.6f),
+                                tint = ErrorRed.copy(alpha = 0.8f),
                                 modifier = Modifier.size(48.dp)
                             )
                             Spacer(Modifier.height(12.dp))
                             Text(
                                 errorMessage!!,
-                                color = Color.Red.copy(alpha = 0.7f),
+                                color = ErrorRed.copy(alpha = 0.9f),
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.padding(horizontal = 32.dp)
                             )
@@ -884,14 +1023,14 @@ fun ViewPdfScreen(onBack: () -> Unit, initialUri: Uri? = null) {
                                     // Zoom indicator
                                     if (scale != 1f) {
                                         Surface(
-                                            color = Color.Black.copy(alpha = 0.6f),
+                                            color = NightBg.copy(alpha = 0.92f),
                                             shape = RoundedCornerShape(8.dp),
                                             modifier = Modifier.align(Alignment.TopEnd)
                                                 .padding(12.dp)
                                         ) {
                                             Text(
                                                 "${(scale * 100).toInt()}%",
-                                                color = Color.White,
+                                                color = NightInk,
                                                 fontSize = 12.sp,
                                                 fontWeight = FontWeight.Medium,
                                                 modifier = Modifier.padding(
@@ -954,14 +1093,14 @@ fun ViewPdfScreen(onBack: () -> Unit, initialUri: Uri? = null) {
 
                                     if (scale != 1f) {
                                         Surface(
-                                            color = Color.Black.copy(alpha = 0.6f),
+                                            color = NightBg.copy(alpha = 0.92f),
                                             shape = RoundedCornerShape(8.dp),
                                             modifier = Modifier.align(Alignment.TopEnd)
                                                 .padding(12.dp)
                                         ) {
                                             Text(
                                                 "${(scale * 100).toInt()}%",
-                                                color = Color.White,
+                                                color = NightInk,
                                                 fontSize = 12.sp,
                                                 fontWeight = FontWeight.Medium,
                                                 modifier = Modifier.padding(
@@ -1040,8 +1179,8 @@ fun ViewPdfScreen(onBack: () -> Unit, initialUri: Uri? = null) {
                                     onClick = {
                                         scale = 1f; offsetX = 0f; offsetY = 0f
                                     },
-                                    containerColor = Color.White,
-                                    contentColor = AccentView,
+                                    containerColor = AccentView,
+                                    contentColor = Color.White,
                                     modifier = Modifier.size(44.dp)
                                 ) {
                                     Icon(
@@ -1055,6 +1194,13 @@ fun ViewPdfScreen(onBack: () -> Unit, initialUri: Uri? = null) {
                 }
             }
         }
+
+        // Blocking open modal — holds until the renderer + text index are ready.
+        ModernGlassLoader(
+            isShowing = isLoading,
+            title = if (sourceUri != null) "Opening PDF" else "Preparing viewer",
+            statusText = openStatus
+        )
 
         // Go to Page Dialog
         if (showGoToPage) {
@@ -1135,18 +1281,13 @@ fun ViewPdfScreen(onBack: () -> Unit, initialUri: Uri? = null) {
                                     Box(
                                         Modifier.size(36.dp).clip(CircleShape)
                                             .background(theme.bgColor)
-                                            .border(
-                                                1.dp,
-                                                Color.Gray.copy(alpha = 0.3f),
-                                                CircleShape
-                                            ),
+                                            .border(1.dp, readingInk(theme, 0.35f), CircleShape),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             theme.icon, null,
                                             modifier = Modifier.size(18.dp),
-                                            tint = if (theme == ReadingTheme.DARK) Color.White
-                                            else Color.DarkGray
+                                            tint = readingInk(theme)
                                         )
                                     }
                                     Spacer(Modifier.width(12.dp))
@@ -1206,7 +1347,7 @@ fun ViewPdfScreen(onBack: () -> Unit, initialUri: Uri? = null) {
                                     ) {
                                         Icon(
                                             Icons.Rounded.Close, "Remove",
-                                            tint = Color.Gray,
+                                            tint = InkFaint(),
                                             modifier = Modifier.size(16.dp)
                                         )
                                     }
@@ -1231,6 +1372,7 @@ fun ViewPdfScreen(onBack: () -> Unit, initialUri: Uri? = null) {
 // ═══════════════════════════════════════════════════════════
 @Composable
 private fun PdfSearchBar(
+    readingTheme: ReadingTheme,
     query: String,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
@@ -1243,9 +1385,10 @@ private fun PdfSearchBar(
     onNextResult: () -> Unit
 ) {
     val focusManager = LocalFocusManager.current
+    val ink = readingInk(readingTheme)
 
     Surface(
-        color = AccentView.copy(alpha = 0.95f),
+        color = readingSurface(readingTheme),
         tonalElevation = 4.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -1261,7 +1404,7 @@ private fun PdfSearchBar(
                     placeholder = {
                         Text(
                             if (isExtractingText) "Indexing text…" else "Search in PDF…",
-                            fontSize = 14.sp, color = Color.White.copy(alpha = 0.5f)
+                            fontSize = 14.sp, color = readingInk(readingTheme, 0.5f)
                         )
                     },
                     singleLine = true,
@@ -1271,33 +1414,33 @@ private fun PdfSearchBar(
                         onSearch(); focusManager.clearFocus()
                     }),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        cursorColor = Color.White,
-                        focusedBorderColor = Color.White.copy(alpha = 0.5f),
-                        unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
-                        disabledTextColor = Color.White.copy(alpha = 0.3f),
-                        disabledBorderColor = Color.White.copy(alpha = 0.2f)
+                        focusedTextColor = ink,
+                        unfocusedTextColor = ink,
+                        cursorColor = AccentView,
+                        focusedBorderColor = AccentView.copy(alpha = 0.7f),
+                        unfocusedBorderColor = readingInk(readingTheme, 0.35f),
+                        disabledTextColor = readingInk(readingTheme, 0.3f),
+                        disabledBorderColor = readingInk(readingTheme, 0.2f)
                     ),
                     modifier = Modifier
                         .weight(1f)
                         .heightIn(min = 52.dp),  // ◀ CHANGED: heightIn instead of fixed height
                     textStyle = LocalTextStyle.current.copy(
                         fontSize = 15.sp,  // ◀ CHANGED: slightly larger
-                        color = Color.White
+                        color = ink
                     )
                     // ◀ trailingIcon stays the same
                     ,trailingIcon = {
                         if (isSearching || isExtractingText) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(20.dp),
-                                color = Color.White, strokeWidth = 2.dp
+                                color = AccentView, strokeWidth = 2.dp
                             )
                         } else if (query.isNotBlank()) {
                             IconButton(onClick = { onQueryChange("") }) {
                                 Icon(
                                     Icons.Rounded.Clear, "Clear",
-                                    tint = Color.White.copy(alpha = 0.7f),
+                                    tint = readingInk(readingTheme, 0.6f),
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -1310,7 +1453,7 @@ private fun PdfSearchBar(
                     onClick = { onSearch(); focusManager.clearFocus() },
                     enabled = query.isNotBlank() && !isExtractingText,
                     colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = Color.White.copy(alpha = 0.2f),
+                        containerColor = AccentView,
                         contentColor = Color.White
                     ),
                     modifier = Modifier.size(40.dp)
@@ -1323,7 +1466,7 @@ private fun PdfSearchBar(
                 IconButton(onClick = onClose, modifier = Modifier.size(36.dp)) {
                     Icon(
                         Icons.Rounded.Close, "Close",
-                        tint = Color.White.copy(alpha = 0.7f),
+                        tint = readingInk(readingTheme, 0.6f),
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -1337,7 +1480,7 @@ private fun PdfSearchBar(
                 ) {
                     Text(
                         "${currentResultIdx + 1} of $resultCount result${if (resultCount != 1) "s" else ""}",
-                        color = Color.White.copy(alpha = 0.8f),
+                        color = readingInk(readingTheme, 0.85f),
                         fontSize = 12.sp, fontWeight = FontWeight.Medium
                     )
                     Spacer(Modifier.weight(1f))
@@ -1348,8 +1491,8 @@ private fun PdfSearchBar(
                     ) {
                         Icon(
                             Icons.Rounded.KeyboardArrowUp, "Previous",
-                            tint = if (currentResultIdx > 0) Color.White
-                            else Color.White.copy(alpha = 0.3f),
+                            tint = if (currentResultIdx > 0) readingInk(readingTheme)
+                            else readingInk(readingTheme, 0.3f),
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -1360,8 +1503,8 @@ private fun PdfSearchBar(
                     ) {
                         Icon(
                             Icons.Rounded.KeyboardArrowDown, "Next",
-                            tint = if (currentResultIdx < resultCount - 1) Color.White
-                            else Color.White.copy(alpha = 0.3f),
+                            tint = if (currentResultIdx < resultCount - 1) readingInk(readingTheme)
+                            else readingInk(readingTheme, 0.3f),
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -1370,7 +1513,7 @@ private fun PdfSearchBar(
                 Spacer(Modifier.height(4.dp))
                 Text(
                     "No results found",
-                    color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp
+                    color = readingInk(readingTheme, 0.6f), fontSize = 12.sp
                 )
             }
         }
@@ -1389,11 +1532,7 @@ private fun SearchResultsStrip(
     onResultTap: (Int) -> Unit,
     readingTheme: ReadingTheme
 ) {
-    val stripBg = when (readingTheme) {
-        ReadingTheme.DARK -> Color(0xFF2A2A3E)
-        ReadingTheme.SEPIA -> Color(0xFFE8D4B8)
-        ReadingTheme.LIGHT -> MaterialTheme.colorScheme.surfaceVariant
-    }
+    val stripBg = readingSurface(readingTheme)
 
     Surface(color = stripBg, tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
         LazyRow(
@@ -1566,8 +1705,8 @@ private fun ThumbnailItem(
             .border(
                 width = if (isSelected) 2.dp else if (hasSearchHit) 1.5.dp else 1.dp,
                 color = if (isSelected) AccentView
-                else if (hasSearchHit) Color(0xFFFF9800)
-                else Color.Gray.copy(alpha = 0.3f),
+                else if (hasSearchHit) AccentView.copy(alpha = 0.8f)
+                else InkBorder.copy(alpha = 0.6f),
                 shape = RoundedCornerShape(8.dp)
             )
             .clickable(onClick = onClick)
@@ -1581,7 +1720,7 @@ private fun ThumbnailItem(
             )
         } else {
             Box(
-                Modifier.fillMaxSize().background(Color.LightGray.copy(alpha = 0.3f)),
+                Modifier.fillMaxSize().background(InkBorder.copy(alpha = 0.3f)),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(
@@ -1605,7 +1744,7 @@ private fun ThumbnailItem(
         if (hasSearchHit) {
             Box(
                 Modifier.size(12.dp).clip(CircleShape)
-                    .background(Color(0xFFFF9800))
+                    .background(AccentView)
                     .align(Alignment.TopStart).padding(1.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -1653,17 +1792,13 @@ private fun LazyPageCard(
     }
     DisposableEffect(pageIndex) { onDispose { bitmap?.recycle(); bitmap = null } }
 
-    val cardBg = when (readingTheme) {
-        ReadingTheme.DARK -> Color(0xFF2A2A3E)
-        ReadingTheme.SEPIA -> Color(0xFFF0DCC0)
-        ReadingTheme.LIGHT -> MaterialTheme.colorScheme.surface
-    }
+    val cardBg = readingSurface(readingTheme)
 
     Card(
         modifier = Modifier.fillMaxWidth()
             .then(
                 if (hasSearchHit) Modifier.border(
-                    2.dp, Color(0xFFFF9800), RoundedCornerShape(12.dp)
+                    2.dp, AccentView, RoundedCornerShape(12.dp)
                 ) else Modifier
             ),
         shape = RoundedCornerShape(12.dp),
@@ -1673,7 +1808,7 @@ private fun LazyPageCard(
         Column {
             if (hasSearchHit && searchQuery.isNotBlank()) {
                 Surface(
-                    color = Color(0xFFFF9800),
+                    color = AccentView,
                     shape = RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp),
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 ) {
@@ -1709,9 +1844,7 @@ private fun LazyPageCard(
                             Spacer(Modifier.height(8.dp))
                             Text(
                                 "Rendering page ${pageIndex + 1}…", fontSize = 12.sp,
-                                color = if (readingTheme == ReadingTheme.DARK)
-                                    Color.White.copy(alpha = 0.4f)
-                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                                color = readingInk(readingTheme, 0.4f)
                             )
                         }
                     }
@@ -1720,19 +1853,19 @@ private fun LazyPageCard(
                 hasError -> {
                     Box(
                         Modifier.fillMaxWidth().height(200.dp)
-                            .background(Color(0xFFFFF3F3)),
+                            .background(ErrorRed.copy(alpha = 0.08f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
                                 Icons.Rounded.ErrorOutline, null,
-                                tint = Color.Red.copy(alpha = 0.5f),
+                                tint = ErrorRed.copy(alpha = 0.7f),
                                 modifier = Modifier.size(28.dp)
                             )
                             Spacer(Modifier.height(8.dp))
                             Text(
                                 "Failed to load page ${pageIndex + 1}",
-                                color = Color.Red.copy(alpha = 0.6f), fontSize = 13.sp
+                                color = ErrorRed.copy(alpha = 0.85f), fontSize = 13.sp
                             )
                         }
                     }
@@ -1785,11 +1918,7 @@ private fun LazyPageCard(
             // Footer
             Row(
                 Modifier.fillMaxWidth().background(
-                    when (readingTheme) {
-                        ReadingTheme.DARK -> Color(0xFF222236)
-                        ReadingTheme.SEPIA -> Color(0xFFE8D4B8)
-                        ReadingTheme.LIGHT -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    }
+                    readingSurface(readingTheme)
                 ).padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -1809,9 +1938,7 @@ private fun LazyPageCard(
                     Text(
                         "Page ${pageIndex + 1} of $totalPages",
                         fontSize = 12.sp,
-                        color = if (readingTheme == ReadingTheme.DARK)
-                            Color.White.copy(alpha = 0.6f)
-                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = readingInk(readingTheme, 0.6f)
                     )
                 }
                 IconButton(
@@ -1823,8 +1950,7 @@ private fun LazyPageCard(
                         else Icons.Rounded.BookmarkBorder,
                         "Bookmark",
                         tint = if (isBookmarked) AccentView
-                        else if (readingTheme == ReadingTheme.DARK)
-                            Color.White.copy(alpha = 0.4f) else Color.Gray,
+                        else readingInk(readingTheme, 0.4f),
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -1860,11 +1986,7 @@ private fun SinglePageView(
         onDispose { bitmap?.recycle(); bitmap = null }
     }
 
-    val cardBg = when (readingTheme) {
-        ReadingTheme.DARK -> Color(0xFF2A2A3E)
-        ReadingTheme.SEPIA -> Color(0xFFF0DCC0)
-        ReadingTheme.LIGHT -> Color.White
-    }
+    val cardBg = readingPageBg(readingTheme)
 
     when {
         isLoading -> CircularProgressIndicator(
@@ -1925,7 +2047,7 @@ private fun SinglePageView(
             }
         }
 
-        else -> Text("Failed to load page", color = Color.Red.copy(alpha = 0.6f))
+        else -> Text("Failed to load page", color = ErrorRed.copy(alpha = 0.8f))
     }
 }
 
@@ -1943,11 +2065,7 @@ private fun SinglePageNavBar(
     onNext: () -> Unit,
     onToggleBookmark: () -> Unit
 ) {
-    val barBg = when (readingTheme) {
-        ReadingTheme.DARK -> Color(0xFF222236)
-        ReadingTheme.SEPIA -> Color(0xFFE8D4B8)
-        ReadingTheme.LIGHT -> MaterialTheme.colorScheme.surface
-    }
+    val barBg = readingSurface(readingTheme)
 
     Surface(
         color = barBg, tonalElevation = 2.dp,
@@ -1982,9 +2100,7 @@ private fun SinglePageNavBar(
                 )
                 Text(
                     "of $totalPages", fontSize = 12.sp,
-                    color = if (readingTheme == ReadingTheme.DARK)
-                        Color.White.copy(alpha = 0.5f)
-                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    color = readingInk(readingTheme, 0.5f)
                 )
             }
 
@@ -1997,7 +2113,7 @@ private fun SinglePageNavBar(
                         if (isBookmarked) Icons.Rounded.Bookmark
                         else Icons.Rounded.BookmarkBorder,
                         "Bookmark",
-                        tint = if (isBookmarked) AccentView else Color.Gray,
+                        tint = if (isBookmarked) AccentView else readingInk(readingTheme, 0.4f),
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -2042,11 +2158,7 @@ private fun ContinuousBottomBar(
     onChangeFile: () -> Unit,
     readingTheme: ReadingTheme
 ) {
-    val barBg = when (readingTheme) {
-        ReadingTheme.DARK -> Color(0xFF222236)
-        ReadingTheme.SEPIA -> Color(0xFFE8D4B8)
-        ReadingTheme.LIGHT -> MaterialTheme.colorScheme.surface
-    }
+    val barBg = readingSurface(readingTheme)
 
     Surface(
         color = barBg, tonalElevation = 4.dp, shadowElevation = 8.dp,
@@ -2061,7 +2173,7 @@ private fun ContinuousBottomBar(
                 Text(
                     "Page ${currentPage + 1} of $totalPages",
                     fontWeight = FontWeight.SemiBold, fontSize = 14.sp,
-                    color = if (readingTheme == ReadingTheme.DARK) Color.White else AccentView
+                    color = readingInk(readingTheme)
                 )
                 Spacer(Modifier.height(4.dp))
                 LinearProgressIndicator(
@@ -2108,33 +2220,13 @@ private fun formatViewSize(bytes: Long): String = when {
 
 @Composable
 private fun ViewSelectButton(onClick: () -> Unit) {
-    Card(
+    PrecisionGradientButton(
+        text = "Open PDF File",
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(60.dp).shadow(
-            8.dp, RoundedCornerShape(16.dp),
-            ambientColor = AccentView.copy(alpha = 0.3f),
-            spotColor = AccentView.copy(alpha = 0.3f)
-        ),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-    ) {
-        Box(
-            Modifier.fillMaxSize().background(Brush.horizontalGradient(GradientView)),
-            contentAlignment = Alignment.Center
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Rounded.FileOpen, null,
-                    tint = Color.White, modifier = Modifier.size(22.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    "Open PDF File", color = Color.White,
-                    fontWeight = FontWeight.SemiBold, fontSize = 15.sp
-                )
-            }
-        }
-    }
+        height = 60.dp,
+        gradient = GradientView,
+        icon = Icons.Rounded.FileOpen
+    )
 }
 
 @Composable
@@ -2156,13 +2248,13 @@ private fun ViewEmptyState() {
             Text(
                 "No PDF opened",
                 fontWeight = FontWeight.SemiBold, fontSize = 18.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                color = PaperInk.copy(alpha = 0.65f)
             )
             Spacer(Modifier.height(8.dp))
             Text(
                 "Select a PDF file to view its contents",
                 fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                color = PaperInk.copy(alpha = 0.45f),
                 textAlign = TextAlign.Center, lineHeight = 20.sp
             )
             Spacer(Modifier.height(24.dp))
@@ -2200,7 +2292,7 @@ private fun ViewFeatureRow(
         Spacer(Modifier.width(8.dp))
         Text(
             text, fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+            color = PaperInk.copy(alpha = 0.5f)
         )
     }
 }

@@ -2,6 +2,8 @@ package com.yashodatech.pdftoolkit
 
 import com.yashodatech.pdftoolkit.components.LiquidHeader
 import com.yashodatech.pdftoolkit.components.ModernGlassLoader
+import com.yashodatech.pdftoolkit.components.PrecisionFileSelectCard
+import com.yashodatech.pdftoolkit.components.PrecisionGradientButton
 import com.yashodatech.pdftoolkit.theme.GradientCompressVibrant
 
 import android.app.Activity
@@ -609,31 +611,12 @@ private fun CompressSuccessScreen(
         Spacer(Modifier.weight(0.2f))
 
         // ── Compress Another ────────────────────
-        Button(
+        PrecisionGradientButton(
+            text = "Compress Another PDF",
             onClick = onCompressAnother,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-            contentPadding = PaddingValues(0.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.horizontalGradient(GradientCompress),
-                        RoundedCornerShape(16.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Rounded.Add, null, modifier = Modifier.size(22.dp))
-                    Spacer(Modifier.width(10.dp))
-                    Text("Compress Another PDF", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                }
-            }
-        }
+            gradient = GradientCompress,
+            icon = Icons.Rounded.Add
+        )
 
         Spacer(Modifier.height(12.dp))
 
@@ -673,39 +656,14 @@ private fun CompressStatItem(label: String, value: String, color: Color) {
 // ═══════════════════════════════════════════════════════════
 @Composable
 private fun CompressSelectButton(hasFile: Boolean, onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(60.dp)
-            .shadow(
-                elevation = 8.dp,
-                shape = RoundedCornerShape(16.dp),
-                ambientColor = AccentCompress.copy(alpha = 0.3f),
-                spotColor = AccentCompress.copy(alpha = 0.3f)
-            ),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Brush.horizontalGradient(GradientCompress)),
-            contentAlignment = Alignment.Center
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    if (hasFile) Icons.Rounded.SwapHoriz else Icons.Rounded.FileOpen,
-                    null, tint = Color.White, modifier = Modifier.size(22.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    if (hasFile) "Change PDF File" else "Select PDF File",
-                    color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 15.sp
-                )
-            }
-        }
-    }
+    PrecisionFileSelectCard(
+        title = if (hasFile) "Change PDF File" else "Select PDF File",
+        subtitle = "Tap to choose a .pdf file",
+        chipLabel = ".PDF",
+        gradient = GradientCompressVibrant,
+        icon = Icons.Rounded.FileOpen,
+        onClick = onClick
+    )
 }
 
 
@@ -1008,31 +966,12 @@ private fun CompressBottomArea(onCompressClick: () -> Unit) {
             .fillMaxWidth()
             .padding(16.dp)
     ) {
-        Button(
+        PrecisionGradientButton(
+            text = "Compress PDF",
             onClick = onCompressClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-            contentPadding = PaddingValues(0.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.horizontalGradient(GradientCompress),
-                        RoundedCornerShape(16.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Rounded.Compress, null, modifier = Modifier.size(22.dp))
-                    Spacer(Modifier.width(10.dp))
-                    Text("Compress PDF", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                }
-            }
-        }
+            gradient = GradientCompress,
+            icon = Icons.Rounded.Compress
+        )
     }
 }
 

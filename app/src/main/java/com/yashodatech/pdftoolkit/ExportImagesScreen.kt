@@ -39,6 +39,7 @@ import com.yashodatech.pdftoolkit.components.LiquidGlassCard
 import com.yashodatech.pdftoolkit.components.LiquidHeader
 import com.yashodatech.pdftoolkit.components.LiquidPrimaryButton
 import com.yashodatech.pdftoolkit.components.ModernGlassLoader
+import com.yashodatech.pdftoolkit.components.PrecisionFileSelectCard
 import com.yashodatech.pdftoolkit.pdf.ExportFormat
 import com.yashodatech.pdftoolkit.pdf.PdfImageExporter
 import com.yashodatech.pdftoolkit.theme.*
@@ -216,21 +217,14 @@ fun ExportImagesScreen(onBack: () -> Unit) {
                 ) {
                     Spacer(Modifier.height(16.dp))
 
-                    LiquidGlassCard(onClick = { launcher.launch(arrayOf("application/pdf")) }) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                if (sourceUri != null) Icons.Rounded.SwapHoriz else Icons.Rounded.FileOpen,
-                                contentDescription = null,
-                                tint = Vermilion,
-                                modifier = Modifier.size(22.dp)
-                            )
-                            Spacer(Modifier.width(10.dp))
-                            Text(
-                                if (sourceUri != null) "Change PDF File" else "Select PDF File",
-                                fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = InkBone
-                            )
-                        }
-                    }
+                    PrecisionFileSelectCard(
+                        title = if (sourceUri != null) "Change PDF File" else "Select PDF File",
+                        subtitle = "Tap to choose a .pdf file",
+                        chipLabel = ".PDF",
+                        gradient = GradientExportImagesVibrant,
+                        icon = Icons.Rounded.FileOpen,
+                        onClick = { launcher.launch(arrayOf("application/pdf")) }
+                    )
 
                     if (sourceUri != null) {
                         Spacer(Modifier.height(16.dp))
@@ -244,8 +238,8 @@ fun ExportImagesScreen(onBack: () -> Unit) {
                             LiquidGlassCard {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
-                                        Text(sourceName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = InkBone, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Text("$sourceSize • $totalPages page${if (totalPages != 1) "s" else ""}", fontSize = 11.sp, color = InkMuted)
+                                        Text(sourceName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = InkBone(), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text("$sourceSize • $totalPages page${if (totalPages != 1) "s" else ""}", fontSize = 11.sp, color = InkMuted())
                                     }
                                     Icon(Icons.Rounded.Description, null, tint = Vermilion, modifier = Modifier.size(24.dp))
                                 }
@@ -254,7 +248,7 @@ fun ExportImagesScreen(onBack: () -> Unit) {
                             // ── Pages ──
                             Spacer(Modifier.height(20.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Pages to export", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint, modifier = Modifier.weight(1f))
+                                Text("Pages to export", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint(), modifier = Modifier.weight(1f))
                                 Text(
                                     if (selectedPages.size == totalPages) "All $totalPages"
                                     else "${selectedPages.size} selected",
@@ -290,7 +284,7 @@ fun ExportImagesScreen(onBack: () -> Unit) {
 
                             // ── Format ──
                             Spacer(Modifier.height(20.dp))
-                            Text("Format", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint)
+                            Text("Format", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint())
                             Spacer(Modifier.height(8.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 FormatChip(label = "JPG", desc = "smaller", selected = format == ExportFormat.JPG, onClick = { format = ExportFormat.JPG })
@@ -301,7 +295,7 @@ fun ExportImagesScreen(onBack: () -> Unit) {
                             if (format == ExportFormat.JPG) {
                                 Spacer(Modifier.height(16.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("Quality", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint, modifier = Modifier.weight(1f))
+                                    Text("Quality", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint(), modifier = Modifier.weight(1f))
                                     Text("$quality%", fontSize = 12.sp, color = Vermilion, fontWeight = FontWeight.SemiBold)
                                 }
                                 Slider(
@@ -314,10 +308,10 @@ fun ExportImagesScreen(onBack: () -> Unit) {
                                         thumbColor = Vermilion
                                     )
                                 )
-                                Text("Saved to Pictures/PDF Toolkit at full page resolution", fontSize = 11.sp, color = InkMuted)
+                                Text("Saved to Pictures/PDF Toolkit at full page resolution", fontSize = 11.sp, color = InkMuted())
                             } else {
                                 Spacer(Modifier.height(8.dp))
-                                Text("PNG is saved lossless at full page resolution", fontSize = 11.sp, color = InkMuted)
+                                Text("PNG is saved lossless at full page resolution", fontSize = 11.sp, color = InkMuted())
                             }
 
                             Spacer(Modifier.height(20.dp))
@@ -358,9 +352,9 @@ private fun FormatChip(label: String, desc: String, selected: Boolean, onClick: 
             label,
             fontSize = 14.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
-            color = if (selected) Vermilion else InkBone
+            color = if (selected) Vermilion else InkBone()
         )
-        Text(desc, fontSize = 10.sp, color = InkMuted)
+        Text(desc, fontSize = 10.sp, color = InkMuted())
     }
 }
 
@@ -381,7 +375,7 @@ private fun PageActionChip(label: String, selected: Boolean, onClick: () -> Unit
             label,
             fontSize = 11.5.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (selected) Vermilion else InkMuted
+            color = if (selected) Vermilion else InkMuted()
         )
     }
 }
@@ -467,9 +461,9 @@ private fun ExportEmptyState() {
             Icon(Icons.Rounded.PhotoLibrary, null, tint = Vermilion.copy(alpha = 0.5f), modifier = Modifier.size(46.dp))
         }
         Spacer(Modifier.height(20.dp))
-        Text("No PDF selected", fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = InkMuted)
+        Text("No PDF selected", fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = InkMuted())
         Spacer(Modifier.height(8.dp))
-        Text("Select a PDF to export its pages as images", fontSize = 13.sp, color = InkFaint, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Text("Select a PDF to export its pages as images", fontSize = 13.sp, color = InkFaint(), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }
 
@@ -489,13 +483,13 @@ private fun ExportImagesSuccess(
         Spacer(Modifier.weight(0.25f))
         Box(Modifier.size(110.dp).clip(CircleShape).background(Vermilion.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
             Box(Modifier.size(74.dp).clip(CircleShape).background(Vermilion), contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.PhotoLibrary, null, tint = InkBone, modifier = Modifier.size(38.dp))
+                Icon(Icons.Rounded.PhotoLibrary, null, tint = InkBone(), modifier = Modifier.size(38.dp))
             }
         }
         Spacer(Modifier.height(24.dp))
-        Text("Images exported!", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = InkBone)
+        Text("Images exported!", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = InkBone())
         Spacer(Modifier.height(8.dp))
-        Text("$count ${format.ext.uppercase()} saved to Pictures/PDF Toolkit", fontSize = 13.sp, color = InkMuted)
+        Text("$count ${format.ext.uppercase()} saved to Pictures/PDF Toolkit", fontSize = 13.sp, color = InkMuted())
         Spacer(Modifier.height(28.dp))
 
         LiquidPrimaryButton(text = "View Images", onClick = onView)
@@ -505,7 +499,7 @@ private fun ExportImagesSuccess(
         LiquidPrimaryButton(text = "Export Another PDF", onClick = onExportAnother)
         Spacer(Modifier.height(12.dp))
         TextButton(onClick = onBack) {
-            Text("Back to Home", color = InkMuted)
+            Text("Back to Home", color = InkMuted())
         }
     }
 }

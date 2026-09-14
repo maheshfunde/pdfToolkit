@@ -39,6 +39,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.yashodatech.pdftoolkit.components.ModernGlassLoader
+import com.yashodatech.pdftoolkit.components.PrecisionFileSelectCard
 
 private fun formatOcrBytes(bytes: Long): String = when {
     bytes < 1024 -> "$bytes B"
@@ -193,21 +194,14 @@ fun OcrScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}) {
                 ) {
                     Spacer(Modifier.height(16.dp))
 
-                    LiquidGlassCard(onClick = { launcher.launch(arrayOf("application/pdf")) }) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                if (sourceUri != null) Icons.Rounded.SwapHoriz else Icons.Rounded.FileOpen,
-                                contentDescription = null,
-                                tint = Vermilion,
-                                modifier = Modifier.size(22.dp)
-                            )
-                            Spacer(Modifier.width(10.dp))
-                            Text(
-                                if (sourceUri != null) "Change PDF File" else "Select Scanned PDF",
-                                fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = InkBone
-                            )
-                        }
-                    }
+                    PrecisionFileSelectCard(
+                        title = if (sourceUri != null) "Change PDF File" else "Select Scanned PDF",
+                        subtitle = "Tap to choose a .pdf file",
+                        chipLabel = ".PDF",
+                        gradient = GradientOcrVibrant,
+                        icon = Icons.Rounded.FileOpen,
+                        onClick = { launcher.launch(arrayOf("application/pdf")) }
+                    )
 
                     if (sourceUri != null) {
                         Spacer(Modifier.height(16.dp))
@@ -221,8 +215,8 @@ fun OcrScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}) {
                             LiquidGlassCard {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
-                                        Text(sourceName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = InkBone, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Text("$sourceSize • $totalPages page${if (totalPages != 1) "s" else ""}", fontSize = 11.sp, color = InkMuted)
+                                        Text(sourceName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = InkBone(), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text("$sourceSize • $totalPages page${if (totalPages != 1) "s" else ""}", fontSize = 11.sp, color = InkMuted())
                                     }
                                     Icon(Icons.Rounded.DocumentScanner, null, tint = Vermilion, modifier = Modifier.size(24.dp))
                                 }
@@ -236,14 +230,14 @@ fun OcrScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Icon(Icons.Rounded.Info, null, tint = Vermilion, modifier = Modifier.size(18.dp))
                                         Spacer(Modifier.width(8.dp))
-                                        Text("How it works", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkBone)
+                                        Text("How it works", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkBone())
                                     }
                                     Spacer(Modifier.height(6.dp))
                                     Text(
                                         "Each page is scanned for text and a searchable text layer is added, " +
                                             "so you can select, copy and find words. The image itself is unchanged. " +
                                             "First run downloads the OCR model over the network.",
-                                        fontSize = 12.sp, lineHeight = 17.sp, color = InkMuted
+                                        fontSize = 12.sp, lineHeight = 17.sp, color = InkMuted()
                                     )
                                 }
                             }
@@ -253,7 +247,7 @@ fun OcrScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}) {
                             // ── Progress ──
                             when {
                                 isOcrIng -> {
-                                    Text("Recognizing page $ocrPage of $totalPages…", fontSize = 12.sp, color = InkMuted)
+                                    Text("Recognizing page $ocrPage of $totalPages…", fontSize = 12.sp, color = InkMuted())
                                     Spacer(Modifier.height(8.dp))
                                     LinearProgressIndicator(
                                         progress = { if (totalPages > 0) ocrPage.toFloat() / totalPages else 0f },
@@ -292,9 +286,9 @@ private fun OcrEmptyState() {
             Icon(Icons.Rounded.DocumentScanner, null, tint = Vermilion.copy(alpha = 0.5f), modifier = Modifier.size(46.dp))
         }
         Spacer(Modifier.height(20.dp))
-        Text("No PDF selected", fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = InkMuted)
+        Text("No PDF selected", fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = InkMuted())
         Spacer(Modifier.height(8.dp))
-        Text("Pick a scanned PDF to make it searchable", fontSize = 13.sp, color = InkFaint, textAlign = TextAlign.Center)
+        Text("Pick a scanned PDF to make it searchable", fontSize = 13.sp, color = InkFaint(), textAlign = TextAlign.Center)
     }
 }
 
@@ -313,15 +307,15 @@ private fun OcrSuccess(
         Spacer(Modifier.weight(0.25f))
         Box(Modifier.size(110.dp).clip(CircleShape).background(Vermilion.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
             Box(Modifier.size(74.dp).clip(CircleShape).background(Vermilion), contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.DocumentScanner, null, tint = InkBone, modifier = Modifier.size(38.dp))
+                Icon(Icons.Rounded.DocumentScanner, null, tint = InkBone(), modifier = Modifier.size(38.dp))
             }
         }
         Spacer(Modifier.height(24.dp))
-        Text("Now searchable!", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = InkBone)
+        Text("Now searchable!", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = InkBone())
         Spacer(Modifier.height(8.dp))
-        Text("Saved as $displayName", fontSize = 13.sp, color = InkMuted, textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis)
+        Text("Saved as $displayName", fontSize = 13.sp, color = InkMuted(), textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis)
         Spacer(Modifier.height(8.dp))
-        Text("to Downloads — open it and try selecting any word", fontSize = 12.sp, color = InkFaint)
+        Text("to Downloads — open it and try selecting any word", fontSize = 12.sp, color = InkFaint())
         Spacer(Modifier.height(28.dp))
 
         LiquidPrimaryButton(text = "Open Document", onClick = onView)
@@ -331,7 +325,7 @@ private fun OcrSuccess(
         LiquidPrimaryButton(text = "OCR Another PDF", onClick = onExportAnother)
         Spacer(Modifier.height(12.dp))
         TextButton(onClick = onBack) {
-            Text("Back to Home", color = InkMuted)
+            Text("Back to Home", color = InkMuted())
         }
     }
 }

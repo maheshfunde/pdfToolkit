@@ -2,6 +2,7 @@ package com.yashodatech.pdftoolkit
 
 import com.yashodatech.pdftoolkit.components.LiquidHeader
 import com.yashodatech.pdftoolkit.components.ModernGlassLoader
+import com.yashodatech.pdftoolkit.theme.ButtonSapphireGradient
 import com.yashodatech.pdftoolkit.theme.GradientWordToPdfVibrant
 
 import android.net.Uri
@@ -34,6 +35,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.yashodatech.pdftoolkit.data.PreferencesManager
+import com.yashodatech.pdftoolkit.data.RecentDoc
 import com.yashodatech.pdftoolkit.pdf.WordToPdfConverter
 import com.yashodatech.pdftoolkit.utils.FileHelper
 import kotlinx.coroutines.launch
@@ -293,6 +296,17 @@ fun WordToPdfScreen(onBack: () -> Unit) {
                                     conversionSuccess = true
                                     resultMessage = "Saved to Downloads/PDFToolkit\n${result.pageCount} page(s)"
                                     progress = 1f
+                                    // Surface the freshly created PDF on the Home recents shelf.
+                                    val pdfName = if (outputFileName.endsWith(".pdf", ignoreCase = true))
+                                        outputFileName else "$outputFileName.pdf"
+                                    PreferencesManager(context).addRecentDoc(
+                                        RecentDoc(
+                                            name = pdfName,
+                                            uri = uri.toString(),
+                                            tool = "Word→PDF",
+                                            timestamp = System.currentTimeMillis()
+                                        )
+                                    )
                                 } else {
                                     conversionSuccess = false
                                     resultMessage = "Converted but failed to save to Downloads"
@@ -311,14 +325,19 @@ fun WordToPdfScreen(onBack: () -> Unit) {
                         .fillMaxWidth()
                         .height(54.dp),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = Color.White,
+                        disabledContainerColor = Color.Transparent,
+                        disabledContentColor = Color.White
+                    ),
                     contentPadding = PaddingValues(0.dp)
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(
-                                Brush.horizontalGradient(GradientWordToPdfVibrant),
+                                Brush.horizontalGradient(ButtonSapphireGradient),
                                 RoundedCornerShape(16.dp)
                             ),
                         contentAlignment = Alignment.Center

@@ -39,6 +39,7 @@ import com.yashodatech.pdftoolkit.components.LiquidGlassCard
 import com.yashodatech.pdftoolkit.components.LiquidHeader
 import com.yashodatech.pdftoolkit.components.LiquidPrimaryButton
 import com.yashodatech.pdftoolkit.components.ModernGlassLoader
+import com.yashodatech.pdftoolkit.components.PrecisionFileSelectCard
 import com.yashodatech.pdftoolkit.pdf.PdfPageManager
 import com.yashodatech.pdftoolkit.pdf.PdfWatermarker
 import com.yashodatech.pdftoolkit.pdf.WatermarkConfig
@@ -214,21 +215,14 @@ fun WatermarkPdfScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}
                 ) {
                     Spacer(Modifier.height(16.dp))
 
-                    LiquidGlassCard(onClick = { launcher.launch(arrayOf("application/pdf")) }) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                if (sourceUri != null) Icons.Rounded.SwapHoriz else Icons.Rounded.FileOpen,
-                                contentDescription = null,
-                                tint = Vermilion,
-                                modifier = Modifier.size(22.dp)
-                            )
-                            Spacer(Modifier.width(10.dp))
-                            Text(
-                                if (sourceUri != null) "Change PDF File" else "Select PDF File",
-                                fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = InkBone
-                            )
-                        }
-                    }
+                    PrecisionFileSelectCard(
+                        title = if (sourceUri != null) "Change PDF File" else "Select PDF File",
+                        subtitle = "Tap to choose a .pdf file",
+                        chipLabel = ".PDF",
+                        gradient = GradientWatermarkVibrant,
+                        icon = Icons.Rounded.FileOpen,
+                        onClick = { launcher.launch(arrayOf("application/pdf")) }
+                    )
 
                     if (sourceUri != null) {
                         Spacer(Modifier.height(16.dp))
@@ -242,8 +236,8 @@ fun WatermarkPdfScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}
                             LiquidGlassCard {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
-                                        Text(sourceName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = InkBone, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Text("$sourceSize • $totalPages page${if (totalPages != 1) "s" else ""}", fontSize = 11.sp, color = InkMuted)
+                                        Text(sourceName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = InkBone(), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text("$sourceSize • $totalPages page${if (totalPages != 1) "s" else ""}", fontSize = 11.sp, color = InkMuted())
                                     }
                                     Icon(Icons.Rounded.Description, null, tint = Vermilion, modifier = Modifier.size(24.dp))
                                 }
@@ -251,7 +245,7 @@ fun WatermarkPdfScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}
 
                             // ── Watermark text ──
                             Spacer(Modifier.height(16.dp))
-                            Text("Watermark text", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint)
+                            Text("Watermark text", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint())
                             Spacer(Modifier.height(8.dp))
                             OutlinedTextField(
                                 value = watermarkText,
@@ -262,21 +256,21 @@ fun WatermarkPdfScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = Vermilion,
                                     unfocusedBorderColor = InkBorder,
-                                    focusedTextColor = InkBone,
-                                    unfocusedTextColor = InkBone,
+                                    focusedTextColor = InkBone(),
+                                    unfocusedTextColor = InkBone(),
                                     cursorColor = Vermilion
                                 )
                             )
 
                             // ── Color ──
                             Spacer(Modifier.height(16.dp))
-                            Text("Color", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint)
+                            Text("Color", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint())
                             Spacer(Modifier.height(8.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 val palette = listOf(
                                     "Red" to Vermilion,
-                                    "Slate" to InkMuted,
-                                    "Deep" to InkFaint,
+                                    "Slate" to InkMuted(),
+                                    "Deep" to InkFaint(),
                                     "White" to Color.White
                                 )
                                 palette.forEach { (label, color) ->
@@ -288,14 +282,14 @@ fun WatermarkPdfScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}
                                                 .background(color)
                                                 .then(
                                                     if (watermarkColor == color)
-                                                        Modifier.border(2.dp, InkBone, CircleShape)
+                                                        Modifier.border(2.dp, InkBone(), CircleShape)
                                                     else Modifier
                                                 )
                                                 .clickable { watermarkColor = color },
                                             contentAlignment = Alignment.Center
                                         ) {}
                                         Spacer(Modifier.height(4.dp))
-                                        Text(label, fontSize = 10.sp, color = InkMuted)
+                                        Text(label, fontSize = 10.sp, color = InkMuted())
                                     }
                                 }
                             }
@@ -303,7 +297,7 @@ fun WatermarkPdfScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}
                             // ── Position ──
                             Spacer(Modifier.height(16.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Position", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint, modifier = Modifier.weight(1f))
+                                Text("Position", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint(), modifier = Modifier.weight(1f))
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     PositionChip(label = "Diagonal", selected = diagonal, onClick = { diagonal = true })
                                     PositionChip(label = "Center", selected = !diagonal, onClick = { diagonal = false })
@@ -313,7 +307,7 @@ fun WatermarkPdfScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}
                             // ── Size ──
                             Spacer(Modifier.height(16.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Size", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint, modifier = Modifier.weight(1f))
+                                Text("Size", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint(), modifier = Modifier.weight(1f))
                                 Text("${fontSizePt.roundToInt()}pt", fontSize = 12.sp, color = Vermilion, fontWeight = FontWeight.SemiBold)
                             }
                             Slider(
@@ -329,7 +323,7 @@ fun WatermarkPdfScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}
 
                             // ── Opacity ──
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Opacity", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint, modifier = Modifier.weight(1f))
+                                Text("Opacity", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint(), modifier = Modifier.weight(1f))
                                 Text("${(opacity * 100).roundToInt()}%", fontSize = 12.sp, color = Vermilion, fontWeight = FontWeight.SemiBold)
                             }
                             Slider(
@@ -345,7 +339,7 @@ fun WatermarkPdfScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}
 
                             // ── Preview ──
                             Spacer(Modifier.height(8.dp))
-                            Text("Preview", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint)
+                            Text("Preview", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint())
                             Spacer(Modifier.height(8.dp))
                             PreviewCard(bitmap = previewBitmap, text = watermarkText, color = watermarkColor, opacity = opacity, diagonal = diagonal, fontSizePt = fontSizePt)
 
@@ -380,7 +374,7 @@ private fun PositionChip(label: String, selected: Boolean, onClick: () -> Unit) 
             label,
             fontSize = 12.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (selected) Vermilion else InkMuted
+            color = if (selected) Vermilion else InkMuted()
         )
     }
 }
@@ -413,7 +407,7 @@ private fun PreviewCard(
             )
         } else {
             Box(Modifier.height(200.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text("No preview", fontSize = 13.sp, color = InkFaint)
+                Text("No preview", fontSize = 13.sp, color = InkFaint())
             }
         }
 
@@ -438,9 +432,9 @@ private fun WatermarkEmptyState() {
             Icon(Icons.AutoMirrored.Rounded.BrandingWatermark, null, tint = Vermilion.copy(alpha = 0.5f), modifier = Modifier.size(46.dp))
         }
         Spacer(Modifier.height(20.dp))
-        Text("No PDF selected", fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = InkMuted)
+        Text("No PDF selected", fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = InkMuted())
         Spacer(Modifier.height(8.dp))
-        Text("Select a PDF to add a watermark", fontSize = 13.sp, color = InkFaint)
+        Text("Select a PDF to add a watermark", fontSize = 13.sp, color = InkFaint())
     }
 }
 
@@ -456,14 +450,14 @@ private fun WatermarkSuccess(resultUri: Uri, displayName: String, onApplyAnother
         Spacer(Modifier.weight(0.25f))
         Box(Modifier.size(110.dp).clip(CircleShape).background(Vermilion.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
             Box(Modifier.size(74.dp).clip(CircleShape).background(Vermilion), contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.CheckCircle, null, tint = InkBone, modifier = Modifier.size(42.dp))
+                Icon(Icons.Rounded.CheckCircle, null, tint = InkBone(), modifier = Modifier.size(42.dp))
             }
         }
         Spacer(Modifier.height(24.dp))
-        Text("Watermark applied!", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = InkBone)
+        Text("Watermark applied!", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = InkBone())
         Spacer(Modifier.height(8.dp))
-        Text("Saved to Downloads", fontSize = 13.sp, color = InkMuted)
-        Text(displayName, fontSize = 12.sp, color = InkMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text("Saved to Downloads", fontSize = 13.sp, color = InkMuted())
+        Text(displayName, fontSize = 12.sp, color = InkMuted(), maxLines = 1, overflow = TextOverflow.Ellipsis)
         Spacer(Modifier.height(28.dp))
 
         LiquidPrimaryButton(text = "Open Document", onClick = onOpenDocument)
@@ -493,7 +487,7 @@ private fun WatermarkSuccess(resultUri: Uri, displayName: String, onApplyAnother
         LiquidPrimaryButton(text = "Watermark Another PDF", onClick = onApplyAnother)
         Spacer(Modifier.height(12.dp))
         TextButton(onClick = onBack) {
-            Text("Back to Home", color = InkMuted)
+            Text("Back to Home", color = InkMuted())
         }
     }
 }

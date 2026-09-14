@@ -96,6 +96,11 @@ fun AppNavigation() {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Onboarding.route) { inclusive = true }
                     }
+                },
+                onThemeSelect = { mode ->
+                    scope.launch {
+                        prefsManager.setThemeMode(mode)
+                    }
                 }
             )
         }

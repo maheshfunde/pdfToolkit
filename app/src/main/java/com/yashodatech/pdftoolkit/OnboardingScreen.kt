@@ -25,49 +25,74 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import com.yashodatech.pdftoolkit.components.PrecisionGradientButton
+import com.yashodatech.pdftoolkit.components.ThemeModePicker
+import com.yashodatech.pdftoolkit.data.ThemeMode
 
 
 data class OnboardingPage(
     val icon: ImageVector,
     val title: String,
-    val description: String,
-    val gradient: List<Color>
+    val description: String
 )
 
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun OnboardingScreen(onComplete: () -> Unit) {
+fun OnboardingScreen(
+    onComplete: () -> Unit,
+    onThemeSelect: (String) -> Unit = {},
+    initialTheme: String = ThemeMode.SYSTEM.key
+) {
 
+    // Pages carry only semantic content. All colors are derived from the active
+    // color scheme so the flow demonstrates the theme choice made on the last
+    // page (tap Dark/Light and the whole onboarding recolors instantly).
     val pages = listOf(
         OnboardingPage(
             icon = Icons.Rounded.PictureAsPdf,
             title = "All-in-One PDF Toolkit",
-            description = "Convert, merge, split, compress and view PDF files — all in one beautiful app.",
-            gradient = listOf(Color(0xFF26221E), Color(0xFF151210))
+            description = "Convert, merge, split, compress and view PDF files — all in one beautiful app."
         ),
         OnboardingPage(
             icon = Icons.Rounded.Image,
             title = "Images to PDF",
-            description = "Snap photos or pick from gallery. Crop, reorder, and convert to professional PDFs instantly.",
-            gradient = listOf(Color(0xFF26221E), Color(0xFF151210))
+            description = "Snap photos or pick from gallery. Crop, reorder, and convert to professional PDFs instantly."
         ),
         OnboardingPage(
             icon = Icons.Rounded.Security,
             title = "100% Private & Offline",
-            description = "All processing happens on your device. Your files never leave your phone. No internet needed.",
-            gradient = listOf(Color(0xFF26221E), Color(0xFF151210))
+            description = "All processing happens on your device. Your files never leave your phone. No internet needed."
         ),
         OnboardingPage(
             icon = Icons.Rounded.Bolt,
             title = "Fast & Free",
-            description = "Lightning fast processing with no file size limits. Completely free to use!",
-            gradient = listOf(Color(0xFF26221E), Color(0xFF151210))
+            description = "Lightning fast processing with no file size limits. Completely free to use!"
         )
     )
 
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val scope = rememberCoroutineScope()
+
+    // Theme preference chosen here is persisted (and applied live) so the user
+    // never has to set it again once they finish onboarding.
+    var chosenTheme by remember { mutableStateOf(initialTheme) }
+
+    // Scheme-derived palette: page glow + indicator shadow lift one surface step
+    // off the canvas; the icon disc sits one step above that; the CTA stays the
+    // brand vermilion so it reads as the action in both modes.
+    val glowGradient = listOf(
+        MaterialTheme.colorScheme.surfaceContainerHighest,
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    )
+    val discGradient = listOf(
+        MaterialTheme.colorScheme.surfaceContainerHigh,
+        MaterialTheme.colorScheme.surfaceContainer
+    )
+    val ctaGradient = listOf(
+        MaterialTheme.colorScheme.primary,
+        MaterialTheme.colorScheme.primaryContainer
+    )
 
     Box(
         modifier = Modifier
@@ -81,7 +106,11 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             state = pagerState,
             modifier = Modifier.fillMaxSize()
         ) { pageIndex ->
-            OnboardingPageContent(page = pages[pageIndex])
+            OnboardingPageContent(
+                page = pages[pageIndex],
+                glowGradient = glowGradient,
+                discGradient = discGradient
+            )
         }
 
         // ── Bottom Section ──────────────────────────
@@ -107,7 +136,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             .clip(CircleShape)
                             .background(
                                 if (isActive)
-                                    Brush.horizontalGradient(pages[index].gradient)
+                                    Brush.horizontalGradient(discGradient)
                                 else
                                     Brush.horizontalGradient(
                                         listOf(
@@ -123,10 +152,32 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                 }
             }
 
-            // ── Action Button ───────────────────────
+            // ── Theme Preference (collected on onboarding) ─────
             val isLastPage = pagerState.currentPage == pages.size - 1
 
-            Button(
+            if (isLastPage) {
+                Text(
+                    text = "Pick your look",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(bottom = 10.dp)
+                )
+
+                ThemeModePicker(
+                    mode = chosenTheme,
+                    onSelect = { mode ->
+                        chosenTheme = mode
+                        onThemeSelect(mode)
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+
+            // ── Action Button ───────────────────────
+            PrecisionGradientButton(
+                text = if (isLastPage) "Get Started" else "Continue",
                 onClick = {
                     if (isLastPage) {
                         onComplete()
@@ -136,31 +187,8 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         }
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Transparent
-                ),
-                contentPadding = PaddingValues(0.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.horizontalGradient(pages[pagerState.currentPage].gradient),
-                            RoundedCornerShape(16.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (isLastPage) "Get Started" else "Continue",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    )
-                }
-            }
+                gradient = ctaGradient
+            )
 
             // ── Skip Button ─────────────────────────
             if (!isLastPage) {
@@ -180,7 +208,11 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 
 
 @Composable
-private fun OnboardingPageContent(page: OnboardingPage) {
+private fun OnboardingPageContent(
+    page: OnboardingPage,
+    glowGradient: List<Color>,
+    discGradient: List<Color>
+) {
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val pulseScale by infiniteTransition.animateFloat(
@@ -212,8 +244,8 @@ private fun OnboardingPageContent(page: OnboardingPage) {
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            page.gradient[0].copy(alpha = 0.2f),
-                            page.gradient[1].copy(alpha = 0.05f)
+                            glowGradient[0].copy(alpha = 0.35f),
+                            glowGradient[1].copy(alpha = 0.0f)
                         )
                     )
                 ),
@@ -224,14 +256,14 @@ private fun OnboardingPageContent(page: OnboardingPage) {
                     .size(100.dp)
                     .clip(CircleShape)
                     .background(
-                        Brush.linearGradient(page.gradient)
+                        Brush.linearGradient(discGradient)
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = page.icon,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(48.dp)
                 )
             }

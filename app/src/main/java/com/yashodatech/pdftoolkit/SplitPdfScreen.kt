@@ -2,6 +2,8 @@ package com.yashodatech.pdftoolkit
 
 import com.yashodatech.pdftoolkit.components.LiquidHeader
 import com.yashodatech.pdftoolkit.components.ModernGlassLoader
+import com.yashodatech.pdftoolkit.components.PrecisionFileSelectCard
+import com.yashodatech.pdftoolkit.components.PrecisionGradientButton
 import com.yashodatech.pdftoolkit.theme.GradientSplitVibrant
 
 import android.app.Activity
@@ -560,31 +562,12 @@ private fun SplitSuccessScreen(
         Spacer(Modifier.weight(0.3f))
 
         // ── Split Another ───────────────────────────
-        Button(
+        PrecisionGradientButton(
+            text = "Split Another PDF",
             onClick = onSplitAnother,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-            contentPadding = PaddingValues(0.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.horizontalGradient(GradientSplit),
-                        RoundedCornerShape(16.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Rounded.Add, null, modifier = Modifier.size(22.dp))
-                    Spacer(Modifier.width(10.dp))
-                    Text("Split Another PDF", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                }
-            }
-        }
+            gradient = GradientSplit,
+            icon = Icons.Rounded.Add
+        )
 
         Spacer(Modifier.height(12.dp))
 
@@ -606,39 +589,14 @@ private fun SplitSuccessScreen(
 // ═══════════════════════════════════════════════════════════
 @Composable
 private fun SplitSelectButton(hasFile: Boolean, onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(60.dp)
-            .shadow(
-                elevation = 8.dp,
-                shape = RoundedCornerShape(16.dp),
-                ambientColor = AccentSplit.copy(alpha = 0.3f),
-                spotColor = AccentSplit.copy(alpha = 0.3f)
-            ),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Brush.horizontalGradient(GradientSplit)),
-            contentAlignment = Alignment.Center
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    if (hasFile) Icons.Rounded.SwapHoriz else Icons.Rounded.FileOpen,
-                    null, tint = Color.White, modifier = Modifier.size(22.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    if (hasFile) "Change PDF File" else "Select PDF File",
-                    color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 15.sp
-                )
-            }
-        }
-    }
+    PrecisionFileSelectCard(
+        title = if (hasFile) "Change PDF File" else "Select PDF File",
+        subtitle = "Tap to choose a .pdf file",
+        chipLabel = ".PDF",
+        gradient = GradientSplitVibrant,
+        icon = Icons.Rounded.FileOpen,
+        onClick = onClick
+    )
 }
 
 
@@ -905,31 +863,12 @@ private fun SplitBottomArea(onSplitClick: () -> Unit) {
             .fillMaxWidth()
             .padding(16.dp)
     ) {
-        Button(
+        PrecisionGradientButton(
+            text = "Split PDF",
             onClick = onSplitClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-            contentPadding = PaddingValues(0.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.horizontalGradient(GradientSplit),
-                        RoundedCornerShape(16.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Rounded.ContentCut, null, modifier = Modifier.size(22.dp))
-                    Spacer(Modifier.width(10.dp))
-                    Text("Split PDF", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                }
-            }
-        }
+            gradient = GradientSplit,
+            icon = Icons.Rounded.ContentCut
+        )
     }
 }
 

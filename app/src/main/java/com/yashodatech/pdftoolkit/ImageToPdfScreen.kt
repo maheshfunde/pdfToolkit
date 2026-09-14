@@ -2,6 +2,7 @@ package com.yashodatech.pdftoolkit
 
 import com.yashodatech.pdftoolkit.components.LiquidHeader
 import com.yashodatech.pdftoolkit.components.ModernGlassLoader
+import com.yashodatech.pdftoolkit.components.PrecisionGradientButton
 import com.yashodatech.pdftoolkit.theme.GradientImageToPdfVibrant
 
 import android.Manifest
@@ -152,6 +153,8 @@ import com.itextpdf.layout.Document
 import com.itextpdf.layout.element.AreaBreak
 import com.itextpdf.layout.element.Image as PdfImage
 import com.itextpdf.layout.properties.AreaBreakType
+import com.yashodatech.pdftoolkit.data.PreferencesManager
+import com.yashodatech.pdftoolkit.data.RecentDoc
 import com.yashodatech.pdftoolkit.pdf.DocumentProcessor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -643,6 +646,15 @@ fun ImageToPdfScreen(onBack: () -> Unit) {
                 savedPdfUri = uri
                 savedPdfName = pdfName
                 showSuccessScreen = true
+                // Surface the freshly created PDF on the Home recents shelf.
+                PreferencesManager(context).addRecentDoc(
+                    RecentDoc(
+                        name = pdfName,
+                        uri = uri.toString(),
+                        tool = "Image→PDF",
+                        timestamp = System.currentTimeMillis()
+                    )
+                )
                 if (Config.SHOW_ADS) {
                     context.findActivity()?.let { activity ->
                         interstitialAd?.show(activity)
@@ -1685,31 +1697,12 @@ private fun CreatePdfBottomBar(onClick: () -> Unit) {
             .fillMaxWidth()
             .padding(16.dp)
     ) {
-        Button(
+        PrecisionGradientButton(
+            text = "Create PDF",
             onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-            contentPadding = PaddingValues(0.dp)
-        ) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.horizontalGradient(GradientImagePdf),
-                        RoundedCornerShape(16.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Rounded.PictureAsPdf, null, modifier = Modifier.size(22.dp))
-                    Spacer(Modifier.width(10.dp))
-                    Text("Create PDF", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                }
-            }
-        }
+            gradient = GradientImagePdf,
+            icon = Icons.Rounded.PictureAsPdf
+        )
     }
 }
 
@@ -1835,34 +1828,12 @@ private fun ImagePdfSuccessScreen(
             }
         }
         Spacer(Modifier.weight(0.2f))
-        Button(
+        PrecisionGradientButton(
+            text = "Create Another PDF",
             onClick = onCreateAnother,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-            contentPadding = PaddingValues(0.dp)
-        ) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.horizontalGradient(GradientImagePdf),
-                        RoundedCornerShape(16.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Rounded.Add, null, modifier = Modifier.size(22.dp))
-                    Spacer(Modifier.width(10.dp))
-                    Text(
-                        "Create Another PDF",
-                        fontWeight = FontWeight.Bold, fontSize = 16.sp
-                    )
-                }
-            }
-        }
+            gradient = GradientImagePdf,
+            icon = Icons.Rounded.Add
+        )
         Spacer(Modifier.height(12.dp))
         TextButton(onClick = onBack) {
             Icon(

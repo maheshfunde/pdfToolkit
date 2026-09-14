@@ -39,6 +39,7 @@ import com.yashodatech.pdftoolkit.components.LiquidGlassCard
 import com.yashodatech.pdftoolkit.components.LiquidHeader
 import com.yashodatech.pdftoolkit.components.LiquidPrimaryButton
 import com.yashodatech.pdftoolkit.components.ModernGlassLoader
+import com.yashodatech.pdftoolkit.components.PrecisionFileSelectCard
 import com.yashodatech.pdftoolkit.data.PreferencesManager
 import com.yashodatech.pdftoolkit.data.RecentDoc
 import com.yashodatech.pdftoolkit.pdf.PageInfo
@@ -231,7 +232,7 @@ fun OrganizePagesScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {
                             }
 
                             Spacer(Modifier.height(12.dp))
-                            Text("Pages", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint)
+                            Text("Pages", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkFaint())
                             Spacer(Modifier.height(8.dp))
 
                             LazyColumn(
@@ -333,9 +334,9 @@ private fun PageRow(
             Text(
                 "Page $position",
                 fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                color = if (isSelected) Vermilion else InkBone
+                color = if (isSelected) Vermilion else InkBone()
             )
-            Text("from page ${page.sourcePage}", fontSize = 10.5.sp, color = InkMuted)
+            Text("from page ${page.sourcePage}", fontSize = 10.5.sp, color = InkMuted())
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(0.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -359,7 +360,7 @@ private fun PageActionButton(
         Icon(
             icon,
             contentDescription = desc,
-            tint = if (enabled) InkMuted else InkFaint,
+            tint = if (enabled) InkMuted() else InkFaint(),
             modifier = Modifier.size(17.dp)
         )
     }
@@ -405,21 +406,14 @@ private fun PageThumb(
 // ═══════════════════════════════════════════════════════════
 @Composable
 private fun SelectSourceButton(hasFile: Boolean, onClick: () -> Unit) {
-    LiquidGlassCard(onClick = onClick) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                if (hasFile) Icons.Rounded.SwapHoriz else Icons.Rounded.FileOpen,
-                contentDescription = null,
-                tint = Vermilion,
-                modifier = Modifier.size(22.dp)
-            )
-            Spacer(Modifier.width(10.dp))
-            Text(
-                if (hasFile) "Change PDF File" else "Select PDF File",
-                fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = InkBone
-            )
-        }
-    }
+    PrecisionFileSelectCard(
+        title = if (hasFile) "Change PDF File" else "Select PDF File",
+        subtitle = "Tap to choose a .pdf file",
+        chipLabel = ".PDF",
+        gradient = GradientOrganizeVibrant,
+        icon = Icons.Rounded.FileOpen,
+        onClick = onClick
+    )
 }
 
 @Composable
@@ -433,9 +427,9 @@ private fun OrganizeEmptyState() {
                 Icon(Icons.Rounded.ViewAgenda, null, tint = Vermilion.copy(alpha = 0.5f), modifier = Modifier.size(46.dp))
             }
             Spacer(Modifier.height(20.dp))
-            Text("No PDF selected", fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = InkMuted)
+            Text("No PDF selected", fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = InkMuted())
             Spacer(Modifier.height(8.dp))
-            Text("Select a PDF to organize its pages", fontSize = 13.sp, color = InkFaint)
+            Text("Select a PDF to organize its pages", fontSize = 13.sp, color = InkFaint())
         }
     }
 }
@@ -445,8 +439,8 @@ private fun PageSummary(name: String, size: String, count: Int) {
     LiquidGlassCard {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = InkBone, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("$size • organizing $count pages", fontSize = 11.sp, color = InkMuted)
+                Text(name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = InkBone(), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text("$size • organizing $count pages", fontSize = 11.sp, color = InkMuted())
             }
             Icon(Icons.Rounded.Description, null, tint = Vermilion, modifier = Modifier.size(24.dp))
         }
@@ -484,14 +478,14 @@ private fun OrganizeSuccess(savedUri: Uri, displayName: String, onChangeAnother:
         Spacer(Modifier.weight(0.25f))
         Box(Modifier.size(110.dp).clip(CircleShape).background(Vermilion.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
             Box(Modifier.size(74.dp).clip(CircleShape).background(Vermilion), contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.CheckCircle, null, tint = InkBone, modifier = Modifier.size(42.dp))
+                Icon(Icons.Rounded.CheckCircle, null, tint = InkBone(), modifier = Modifier.size(42.dp))
             }
         }
         Spacer(Modifier.height(24.dp))
-        Text("PDF saved!", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = InkBone)
+        Text("PDF saved!", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = InkBone())
         Spacer(Modifier.height(8.dp))
-        Text("Saved to Downloads", fontSize = 13.sp, color = InkMuted)
-        Text(displayName, fontSize = 12.sp, color = InkMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text("Saved to Downloads", fontSize = 13.sp, color = InkMuted())
+        Text(displayName, fontSize = 12.sp, color = InkMuted(), maxLines = 1, overflow = TextOverflow.Ellipsis)
         Spacer(Modifier.height(28.dp))
 
         LiquidPrimaryButton(text = "Open Document", onClick = onOpenDocument)
@@ -521,7 +515,7 @@ private fun OrganizeSuccess(savedUri: Uri, displayName: String, onChangeAnother:
         LiquidPrimaryButton(text = "Organize Another PDF", onClick = onChangeAnother)
         Spacer(Modifier.height(12.dp))
         TextButton(onClick = onBack) {
-            Text("Back to Home", color = InkMuted)
+            Text("Back to Home", color = InkMuted())
         }
     }
 }

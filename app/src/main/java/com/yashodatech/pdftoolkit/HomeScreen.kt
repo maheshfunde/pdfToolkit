@@ -1,14 +1,26 @@
 package com.yashodatech.pdftoolkit
 
+import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.pdf.PdfRenderer
 import android.net.Uri
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -26,13 +38,18 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -40,11 +57,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.ads.*
+import com.yashodatech.pdftoolkit.components.PrecisionCategoryPill
+import com.yashodatech.pdftoolkit.components.PrecisionCard
+import com.yashodatech.pdftoolkit.components.PrecisionSegmentTabs
 import com.yashodatech.pdftoolkit.data.PreferencesManager
-import com.yashodatech.pdftoolkit.data.RecentDoc
 import com.yashodatech.pdftoolkit.theme.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.yashodatech.pdftoolkit.data.RecentDoc
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Calendar
 
 data class ToolItem(
@@ -57,10 +82,374 @@ data class ToolItem(
     val badge: String
 )
 
+private data class HomeSection(
+    val title: String,
+    val accent: Color,
+    val tools: List<ToolItem>
+)
+
+private data class Feature(
+    val title: String,
+    val subtitle: String,
+    val body: String,
+    val icon: ImageVector,
+    val accent: Color,
+    val route: String
+)
+
 // ═══════════════════════════════════════════════════════════
-//  HOME SCREEN — EDITORIAL INK DASHBOARD
-//  Icon-led tools, one vermilion stamp, quiet hairline surfaces.
+//  FEATURE SHOWCASE CAROUSEL — auto-advancing highlight banner
+//  Replaces the recent-docs shelf so the band is always filled
+//  with a self-advancing, ad-like spotlight of each core tool.
 // ═══════════════════════════════════════════════════════════
+@Composable
+private fun FeatureShowcaseCarousel(
+    onToolClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val features = remember {
+        listOf(
+            Feature(
+                title = "Merge PDF",
+                subtitle = "Combine 2+ PDFs",
+                body = "Join files into one document in seconds.",
+                icon = Icons.AutoMirrored.Rounded.CallMerge,
+                accent = DomainIndigo,
+                route = Screen.MergePdf.route
+            ),
+            Feature(
+                title = "Compress",
+                subtitle = "Shrink file size",
+                body = "Make oversized PDFs lighter and shareable.",
+                icon = Icons.Rounded.Compress,
+                accent = DomainEmerald,
+                route = Screen.CompressPdf.route
+            ),
+            Feature(
+                title = "Scan & Convert",
+                subtitle = "Image to PDF",
+                body = "Turn JPGs and PNGs into tidy PDF documents.",
+                icon = Icons.Rounded.Image,
+                accent = DomainAmber,
+                route = Screen.ImageToPdf.route
+            ),
+            Feature(
+                title = "Secure & Unlock",
+                subtitle = "Remove a password",
+                body = "Unlock a PDF you own — fast, right on device.",
+                icon = Icons.Rounded.LockOpen,
+                accent = PrecisionPrimary,
+                route = Screen.UnlockPdf.route
+            )
+        )
+    }
+
+    val pagerState = rememberPagerState(pageCount = { features.size })
+
+    // Gentle self-advance: every ~3.6s move to the next page, wrapping around.
+    LaunchedEffect(pagerState, Unit) {
+        while (true) {
+            delay(3600)
+            val next = (pagerState.currentPage + 1) % features.size
+            pagerState.animateScrollToPage(next)
+        }
+    }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = "HIGHLIGHTS",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp),
+            pageSpacing = 12.dp,
+            contentPadding = PaddingValues(horizontal = 2.dp)
+        ) { page ->
+            val feature = features[page]
+            FeatureCard(
+                feature = feature,
+                onClick = { onToolClick(feature.route) },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // Indicator dots — vermilion for the active page.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            features.indices.forEach { index ->
+                val active = pagerState.currentPage == index
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 3.dp)
+                        .size(if (active) 8.dp else 6.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (active) PrecisionPrimary
+                            else MaterialTheme.colorScheme.outlineVariant
+                        )
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FeatureCard(
+    feature: Feature,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            feature.accent.copy(alpha = 0.12f),
+                            MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0f)
+                        )
+                    )
+                )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Domain-tinted icon tile
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(feature.accent.copy(alpha = 0.14f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = feature.icon,
+                        contentDescription = feature.title,
+                        tint = feature.accent,
+                        modifier = Modifier.size(21.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = feature.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = feature.subtitle,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = feature.accent,
+                        maxLines = 1
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = feature.body,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                // Vermilion "Try" pill
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(PrecisionPrimary)
+                        .padding(horizontal = 12.dp, vertical = 7.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Try",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(13.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RECENT DOCS — preview-thumbnail shelf
+//  Shown in place of the feature carousel whenever there are
+//  recently-created files. Each entry renders a PDF page-0 preview
+//  (rendered off the main thread) so the shelf never shows raw text.
+// ═══════════════════════════════════════════════════════════
+@Composable
+private fun RecentDocsRow(docs: List<RecentDoc>, onOpen: (String) -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "RECENT FILES",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.weight(1f))
+            Icon(
+                imageVector = Icons.Outlined.History,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.size(15.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            contentPadding = PaddingValues(end = 4.dp)
+        ) {
+            items(docs.take(6), key = { it.uri }) { doc ->
+                RecentDocCard(doc = doc, onClick = { onOpen(doc.uri) })
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecentDocCard(doc: RecentDoc, onClick: () -> Unit) {
+    val thumbnail = rememberPdfThumbnail(doc.uri)
+    Card(
+        modifier = Modifier
+            .width(86.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(74.dp)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.4f))
+                    .clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (thumbnail != null) {
+                    Image(
+                        bitmap = thumbnail.asImageBitmap(),
+                        contentDescription = doc.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Outlined.PictureAsPdf,
+                        contentDescription = null,
+                        tint = PrecisionPrimary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+            Text(
+                text = doc.name,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+            )
+        }
+    }
+}
+
+// Whether the underlying content URI still resolves to a live file.
+@Suppress("SwallowedException")
+private fun docExists(context: Context, uri: String): Boolean = try {
+    context.contentResolver.openFileDescriptor(Uri.parse(uri), "r")?.use { true } ?: false
+} catch (_: Exception) {
+    false
+}
+
+// Renders PDF page 0 to a Bitmap off the main thread (using the OS renderer,
+// no extra dependency). Null if the file is gone or the render fails.
+@Composable
+private fun rememberPdfThumbnail(uri: String): Bitmap? {
+    val context = LocalContext.current
+    var bitmap by remember(uri) { mutableStateOf<Bitmap?>(null) }
+    LaunchedEffect(uri) {
+        bitmap = withContext(Dispatchers.IO) {
+            try {
+                val fd = context.contentResolver.openFileDescriptor(Uri.parse(uri), "r")
+                    ?: return@withContext null
+                fd.use { parcel ->
+                    PdfRenderer(parcel).use { renderer ->
+                        if (renderer.pageCount < 1) return@withContext null
+                        renderer.openPage(0).use { page ->
+                            val w = page.width.coerceAtLeast(1)
+                            val h = page.height.coerceAtLeast(1)
+                            val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                            page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                            bmp
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
+    return bitmap
+}
+
+private fun formatRecentTime(timestamp: Long): String {
+    val diff = System.currentTimeMillis() - timestamp
+    return when {
+        diff < 60_000L -> "Just now"
+        diff < 3_600_000L -> "${diff / 60_000L} min ago"
+        diff < 86_400_000L -> "${diff / 3_600_000L} hr ago"
+        diff < 604_800_000L -> "${diff / 86_400_000L} d ago"
+        else -> SimpleDateFormat("d MMM", java.util.Locale.getDefault()).format(Date(timestamp))
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  HOME SCREEN — PRECISION TOOLS HUB
+//  Domain-accent category grids, hero reader card, search,
+//  recent docs, quiet dock + ad banner.
+// ═══════════════════════════════════════════════════════════
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     onToolClick: (String) -> Unit,
@@ -73,22 +462,37 @@ fun HomeScreen(
 
     var showPrivacyDialog by remember { mutableStateOf(false) }
     var showRateDialog by remember { mutableStateOf(false) }
-    var lastUsedTool by remember { mutableStateOf("") }
-    var searchQuery by remember { mutableStateOf("") }
+    // rememberSaveable (not remember) so the browsed category survives navigating
+    // to a tool and back — the saved value is restored on re-entry. The value is
+    // ALSO persisted to DataStore every browse, so a cold relaunch returns the
+    // user to the category they were on rather than resetting to "Create".
+    var activeTab by rememberSaveable { mutableStateOf(0) }
+
+    // ── Recent docs state ────────────────────────────────
     var recentDocs by remember { mutableStateOf<List<RecentDoc>>(emptyList()) }
 
-    val privacyUrl = Config.PRIVACY_POLICY_URL
-
-    LaunchedEffect(Unit) {
-        val openCount = prefsManager.appOpenCount.first()
-        val hasRated = prefsManager.hasRated.first()
-        lastUsedTool = prefsManager.lastUsedTool.first()
-        recentDocs = prefsManager.recentDocs.first()
-
-        if (!hasRated && openCount > 0 && openCount % 5 == 0) {
-            showRateDialog = true
+    suspend fun loadRecents() {
+        val all = prefsManager.recentDocs.first()
+        val valid = all.filter { docExists(context, it.uri) }
+        if (valid.size != all.size) {
+            // Prune deleted files from DataStore so they don't linger.
+            scope.launch { prefsManager.setRecentDocs(valid) }
         }
+        recentDocs = valid
     }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                scope.launch { loadRecents() }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    val privacyUrl = Config.PRIVACY_POLICY_URL
 
     val tools = remember {
         listOf(
@@ -203,11 +607,66 @@ fun HomeScreen(
         )
     }
 
-    val filteredTools = remember(searchQuery, tools) {
-        if (searchQuery.isBlank()) tools
-        else tools.filter {
-            it.title.contains(searchQuery, ignoreCase = true) ||
-                    it.subtitle.contains(searchQuery, ignoreCase = true)
+    // The Workbench — quick-creating duo up front, catalogue grouped by document life.
+    val quickCreateTools = remember(tools) {
+        tools.filter {
+            it.route == Screen.ImageToPdf.route || it.route == Screen.WordToPdf.route
+        }
+    }
+
+    fun lifecycleGroup(vararg routes: String): List<ToolItem> =
+        routes.mapNotNull { r -> tools.firstOrNull { it.route == r } }
+
+    val lifecycleSections = remember(tools) {
+        listOf(
+            HomeSection("Create", PrecisionPrimary, lifecycleGroup(
+                Screen.ExportWord.route, Screen.ExportImages.route, Screen.Ocr.route,
+                Screen.CompressPdf.route
+            )),
+            HomeSection("Refine", DomainIndigo, lifecycleGroup(
+                Screen.MergePdf.route, Screen.SplitPdf.route,
+                Screen.OrganizePages.route, Screen.ViewPdf.route
+            )),
+            HomeSection("Protect", DomainEmerald, lifecycleGroup(
+                Screen.WatermarkPdf.route, Screen.UnlockPdf.route
+            ))
+        )
+    }
+
+    // Swipeable catalogue — one page per segment; swiping updates the active tab.
+    val pagerState = rememberPagerState(pageCount = { lifecycleSections.size })
+
+    LaunchedEffect(lifecycleSections) {
+        val openCount = prefsManager.appOpenCount.first()
+        val hasRated = prefsManager.hasRated.first()
+        val lastTool = prefsManager.lastUsedTool.first()
+        val storedTab = prefsManager.homeCategory.first()
+
+        // Restore the category the user was browsing. Priority:
+        //   1. homeCategory — the segment they last swiped/selected to (persisted
+        //      every browse, so a cold relaunch returns to it).
+        //   2. Otherwise, if they last used a tool, its owning segment (useful on
+        //      the first cold start after using a tool, before any browse).
+        //   3. Otherwise fall back to the restored activeTab (back-navigation).
+        val fallbackIdx = lifecycleSections.indexOfFirst { s ->
+            s.tools.any { it.route == lastTool }
+        }.takeIf { it >= 0 } ?: activeTab
+        val target = storedTab ?: fallbackIdx
+        try {
+            pagerState.scrollToPage(target.coerceIn(0, lifecycleSections.size - 1))
+        } catch (_: Exception) {
+            // Pager not laid out yet — the sync below settles the page.
+        }
+
+        // Keep the active tab (and the persisted preference) in step with the
+        // pager, so both swipes and tab-taps save where the user ends up.
+        snapshotFlow { pagerState.currentPage }.collect {
+            activeTab = it
+            prefsManager.setHomeCategory(it)
+        }
+
+        if (!hasRated && openCount > 0 && openCount % 5 == 0) {
+            showRateDialog = true
         }
     }
 
@@ -219,70 +678,78 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .systemBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 6.dp)
         ) {
-            // ── Editorial Header & Search ──────────────────────
-            EditorialHeader(
-                searchQuery = searchQuery,
-                onSearchQueryChange = { searchQuery = it },
-                onSettingsClick = onSettingsClick
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // ── Recently edited ───────────────────────────────
-            if (recentDocs.isNotEmpty() && searchQuery.isBlank()) {
-                RecentDocsRow(docs = recentDocs, onOpen = { onOpenRecentDoc(it) })
-                Spacer(modifier = Modifier.height(14.dp))
-            }
-
-            // ── Tool Grid ─────────────────────────────────────
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp)
             ) {
-                if (filteredTools.isEmpty()) {
-                    EmptyStateBox(searchQuery = searchQuery)
-                } else {
-                    // Scrollable grid with fixed-height rows so the icon AND the
-                    // title/subtitle/category text always fit inside every card.
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                // Fixed upper content: header, showcase/recents, quick create,
+                // and the segment tabs. The catalogue below wraps its own height.
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    HubHeader(onSettingsClick = onSettingsClick)
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Feature showcase — auto-animated, ad-like banner. It's the
+                    // filler when there's nothing recent to show; the moment any
+                    // docs come back, the recents shelf (with preview thumbnails)
+                    // takes this band instead.
+                    if (recentDocs.isEmpty()) {
+                        FeatureShowcaseCarousel(onToolClick = onToolClick)
+                    } else {
+                        RecentDocsRow(docs = recentDocs, onOpen = { onOpenRecentDoc(it) })
+                    }
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Quick create — the gateway
+                    AnimatedVisibility(
+                        visible = true,
+                        enter = fadeIn(tween(450, delayMillis = 90)) + slideInVertically(tween(450, easing = FastOutSlowInEasing)) { it / 6 },
+                        label = "quickEnter"
                     ) {
-                        val chunked = filteredTools.chunked(2)
-                        for (rowItems in chunked) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(148.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                for (tool in rowItems) {
-                                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                        EditorialToolCard(
-                                            tool = tool,
-                                            onClick = { onToolClick(tool.route) }
-                                        )
-                                    }
-                                }
-                                if (rowItems.size == 1) {
-                                    Spacer(modifier = Modifier.weight(1f))
-                                }
-                            }
+                        Column {
+                            QuickCreatePanel(tools = quickCreateTools, onToolClick = onToolClick)
+                            Spacer(modifier = Modifier.height(14.dp))
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    // Lifecycle catalogue — swipe between segments; the tab bubble
+                    // tracks the live swipe, the content rises in like a bubble.
+                    PrecisionSegmentTabs(
+                        tabs = lifecycleSections.map { it.title },
+                        selectedIndex = activeTab,
+                        pagePosition = pagerState.currentPage + pagerState.currentPageOffsetFraction,
+                        onSelect = { tab -> scope.launch { pagerState.animateScrollToPage(tab) } }
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight(),
+                    pageSpacing = 0.dp
+                ) { page ->
+                    val sec = lifecycleSections.getOrElse(page) { lifecycleSections.first() }
+                    // Native horizontal slide between segments — content wraps
+                    // its intrinsic height instead of stretching to fill the viewport.
+                    Column(Modifier.fillMaxWidth().wrapContentHeight()) {
+                        PrecisionCategoryPill(text = sec.title, accent = sec.accent)
+                        Spacer(modifier = Modifier.height(9.dp))
+                        ToolGrid(matches = sec.tools, onToolClick = onToolClick)
                     }
                 }
+                Spacer(modifier = Modifier.height(4.dp))
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // ── Quiet Hairline Dock ───────────────────────────
-            EditorialDock(
+            // ── Quiet Dock — pinned so it is available on every section ──
+            HubDock(
                 onRateClick = {
                     val intent = Intent(
                         Intent.ACTION_VIEW,
@@ -308,7 +775,7 @@ fun HomeScreen(
                 onSettingsClick = onSettingsClick
             )
 
-            // ── Banner Ad ───────────────────────────────────
+            // ── Banner Ad ────────────────────────────────────
             if (Config.SHOW_ADS) {
                 AdBanner()
             }
@@ -332,14 +799,10 @@ fun HomeScreen(
 
 
 // ═══════════════════════════════════════════════════════════
-//  EDITORIAL HEADER — big wordmark, hairline search, quiet settings
+//  HUB HEADER — headline brand line + quiet settings glyph
 // ═══════════════════════════════════════════════════════════
 @Composable
-private fun EditorialHeader(
-    searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
-    onSettingsClick: () -> Unit
-) {
+private fun HubHeader(onSettingsClick: () -> Unit) {
     val greeting = remember {
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         when (hour) {
@@ -349,131 +812,133 @@ private fun EditorialHeader(
         }
     }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column {
-                Text(
-                    text = greeting,
-                    color = InkMuted,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "PDF Toolkit",
-                    color = InkBone,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = (-0.4).sp
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column {
+            Text(
+                text = greeting,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "PDF Toolkit",
+                style = MaterialTheme.typography.displayMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            PrecisionBadge2(text = "Offline")
+            Spacer(modifier = Modifier.width(10.dp))
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f))
+                    .clickable(onClick = onSettingsClick),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Settings,
+                    contentDescription = "Settings",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(19.dp)
                 )
             }
+        }
+    }
+}
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // Offline status — quiet, functional
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(InkSurface)
-                        .padding(horizontal = 9.dp, vertical = 5.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(SuccessGreen)
+@Composable
+private fun PrecisionBadge2(text: String) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(SuccessGreen.copy(alpha = 0.12f))
+            .padding(horizontal = 9.dp, vertical = 5.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(SuccessGreen)
+            )
+            Spacer(Modifier.width(5.dp))
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelSmall,
+                color = SuccessGreen
+            )
+        }
+    }
+}
+
+
+// ═══════════════════════════════════════════════════════════
+//  HERO READER CARD — gradient surface, pill CTA → View & Read
+// ═══════════════════════════════════════════════════════════
+@Composable
+private fun QuickCreatePanel(tools: List<ToolItem>, onToolClick: (String) -> Unit) {
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            PrecisionPrimary.copy(alpha = 0.12f),
+                            MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0f)
                         )
-                        Spacer(Modifier.width(5.dp))
+                    )
+                )
+                .padding(14.dp)
+        ) {
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(PrecisionPrimary.copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Add,
+                            contentDescription = null,
+                            tint = PrecisionPrimary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
                         Text(
-                            text = "Offline",
-                            color = InkMuted,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold
+                            "Create a PDF",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            "Make a document from images or Word",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
-
-                Spacer(Modifier.width(10.dp))
-
-                // Settings — quiet glyph
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(InkSurface)
-                        .clickable(onClick = onSettingsClick),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Settings,
-                        contentDescription = "Settings",
-                        tint = InkMuted,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(18.dp))
-
-        // Search — hairline-bordered field, not a glass pill
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            color = InkSurface,
-            border = BorderStroke(1.dp, InkBorder)
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Search,
-                    contentDescription = "Search",
-                    tint = InkMuted,
-                    modifier = Modifier.size(18.dp)
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                TextField(
-                    value = searchQuery,
-                    onValueChange = onSearchQueryChange,
-                    placeholder = {
-                        Text(
-                            "Search tools — merge, compress…",
-                            color = InkFaint,
-                            fontSize = 13.sp
-                        )
-                    },
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = InkBone,
-                        unfocusedTextColor = InkBone,
-                        cursorColor = Vermilion
-                    ),
-                    singleLine = true,
-                    modifier = Modifier.weight(1f)
-                )
-
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(
-                        onClick = { onSearchQueryChange("") },
-                        modifier = Modifier.size(26.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Clear,
-                            contentDescription = "Clear",
-                            tint = InkMuted,
-                            modifier = Modifier.size(15.dp)
-                        )
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    tools.forEach { tool ->
+                        Box(modifier = Modifier.weight(1f)) {
+                            PrecisionQuickTile(tool = tool, onClick = { onToolClick(tool.route) })
+                        }
                     }
                 }
             }
@@ -481,23 +946,19 @@ private fun EditorialHeader(
     }
 }
 
-
-// ═══════════════════════════════════════════════════════════
-//  EDITORIAL TOOL CARD — icon-led, one mono chip, one vermilion arrow
-// ═══════════════════════════════════════════════════════════
 @Composable
-private fun EditorialToolCard(tool: ToolItem, onClick: () -> Unit) {
+private fun PrecisionQuickTile(tool: ToolItem, onClick: () -> Unit) {
     var isPressed by remember { mutableStateOf(false) }
-
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.96f else 1.0f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "bouncyScale"
     )
-
-    Card(
+    Box(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(PrecisionPrimary.copy(alpha = 0.10f))
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -509,233 +970,201 @@ private fun EditorialToolCard(tool: ToolItem, onClick: () -> Unit) {
                         tryAwaitRelease()
                         isPressed = false
                     },
-                    onTap = {
-                        onClick()
+                    onTap = { onClick() }
+                )
+            }
+            .padding(12.dp)
+    ) {
+        Column {
+            Icon(
+                imageVector = tool.icon,
+                contentDescription = tool.title,
+                tint = PrecisionPrimary,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = tool.title,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = tool.subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+
+// ═══════════════════════════════════════════════════════════
+//  TOOL GRID — 2-column cards, domain-washed
+// ═══════════════════════════════════════════════════════════
+@Composable
+private fun ToolGrid(matches: List<ToolItem>, onToolClick: (String) -> Unit) {
+    val chunked = matches.chunked(2)
+    // Cards wrap their intrinsic height instead of stretching to fill all
+    // available space — keeps compact, consistent sizing regardless of
+    // how much vertical room the parent provides.
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        for (rowItems in chunked) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                for (tool in rowItems) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        PrecisionToolCard(tool = tool, onClick = { onToolClick(tool.route) })
                     }
+                }
+                if (rowItems.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrecisionToolCard(tool: ToolItem, onClick: () -> Unit) {
+    var isPressed by remember { mutableStateOf(false) }
+
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1.0f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "bouncyScale"
+    )
+
+    val accent = categoryAccent(tool.category)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 110.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        isPressed = true
+                        tryAwaitRelease()
+                        isPressed = false
+                    },
+                    onTap = { onClick() }
                 )
             },
         shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(1.dp, InkBorder),
-        colors = CardDefaults.cardColors(
-            containerColor = InkSurface
-        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(14.dp)
+                .fillMaxWidth()
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            accent.copy(alpha = 0.10f),
+                            MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0f)
+                        )
+                    )
+                )
         ) {
-            // Mono icon chip on a raised tile
-            Box(
+            Column(
                 modifier = Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(InkSurfaceElevated),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(12.dp)
             ) {
-                Icon(
-                    imageVector = tool.icon,
-                    contentDescription = tool.title,
-                    tint = InkBone,
-                    modifier = Modifier.size(21.dp)
-                )
-            }
+                // Domain-tinted icon chip
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(accent.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = tool.icon,
+                        contentDescription = tool.title,
+                        tint = accent,
+                        modifier = Modifier.size(19.dp)
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(7.dp))
 
-            // Title & subtitle live right under the icon so they are always
-            // visible even in a short card.
-            Column {
-                Text(
-                    text = tool.title,
-                    color = Color(0xFFF7F4EE),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    lineHeight = 19.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = tool.subtitle,
-                    color = InkMuted,
-                    fontSize = 11.5.sp,
-                    lineHeight = 14.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+                Column {
+                    Text(
+                        text = tool.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = tool.subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
 
-            Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.weight(1f))
 
-            // One action affordance — category label + vermilion chevron
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = tool.category,
-                    color = InkFaint,
-                    fontSize = 10.5.sp,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
-                    contentDescription = null,
-                    tint = Vermilion,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-        }
-    }
-}
-
-
-// ═══════════════════════════════════════════════════════════
-//  EMPTY STATE
-// ═══════════════════════════════════════════════════════════
-@Composable
-private fun EmptyStateBox(searchQuery: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                imageVector = Icons.Outlined.SearchOff,
-                contentDescription = null,
-                tint = InkFaint,
-                modifier = Modifier.size(44.dp)
-            )
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = "No tools matching “$searchQuery”",
-                fontSize = 13.sp,
-                color = InkMuted,
-                fontWeight = FontWeight.Medium
-            )
-        }
-    }
-}
-
-
-// ═══════════════════════════════════════════════════════════
-//  RECENTLY EDITED DOCS — horizontal shelf, tap to reopen in-app
-// ═══════════════════════════════════════════════════════════
-@Composable
-private fun RecentDocsRow(docs: List<RecentDoc>, onOpen: (String) -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Recently edited",
-                color = InkFaint,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.6.sp
-            )
-            Spacer(Modifier.weight(1f))
-            Text(
-                text = "${docs.size} doc${if (docs.size != 1) "s" else ""}",
-                color = InkFaint,
-                fontSize = 10.5.sp
-            )
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            contentPadding = PaddingValues(end = 4.dp)
-        ) {
-            items(docs) { doc ->
-                RecentDocCard(doc = doc, onClick = { onOpen(doc.uri) })
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = tool.badge,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = accent,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                        contentDescription = null,
+                        tint = accent,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun RecentDocCard(doc: RecentDoc, onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .width(150.dp)
-            .height(72.dp),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, InkBorder),
-        colors = CardDefaults.cardColors(containerColor = InkSurface)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(InkSurfaceElevated),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Description,
-                    contentDescription = null,
-                    tint = Vermilion,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Spacer(Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = doc.name,
-                    color = InkBone,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(Modifier.height(3.dp))
-                Text(
-                    text = "${doc.tool} • ${formatRecentTime(doc.timestamp)}",
-                    color = InkMuted,
-                    fontSize = 10.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            Icon(
-                imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
-                contentDescription = null,
-                tint = InkFaint,
-                modifier = Modifier.size(15.dp)
-            )
-        }
+private fun categoryAccent(category: String): Color {
+    return when (category) {
+        "Convert" -> DomainAmber
+        "Organize" -> DomainIndigo
+        "Optimize", "Protect" -> DomainEmerald
+        else -> PrecisionPrimary
     }
 }
 
-private fun formatRecentTime(ts: Long): String {
-    val diff = System.currentTimeMillis() - ts
-    val min = diff / 60_000
-    return when {
-        min < 1 -> "just now"
-        min < 60 -> "${min}m ago"
-        min < 1440 -> "${min / 60}h ago"
-        else -> "${min / 1440}d ago"
-    }
-}
+
 
 
 // ═══════════════════════════════════════════════════════════
-//  QUIET HAIRLINE DOCK
+//  DOCK — Rate / Share / Privacy / Settings
 // ═══════════════════════════════════════════════════════════
 @Composable
-private fun EditorialDock(
+private fun HubDock(
     onRateClick: () -> Unit,
     onShareClick: () -> Unit,
     onPrivacyClick: () -> Unit,
@@ -746,8 +1175,8 @@ private fun EditorialDock(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp)),
-        color = InkSurface,
-        border = BorderStroke(1.dp, InkBorder)
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
         Row(
             modifier = Modifier
@@ -759,25 +1188,21 @@ private fun EditorialDock(
             DockItem(
                 icon = Icons.Outlined.Star,
                 label = "Rate",
-                tint = InkMuted,
                 onClick = onRateClick
             )
             DockItem(
                 icon = Icons.Outlined.Share,
                 label = "Share",
-                tint = InkMuted,
                 onClick = onShareClick
             )
             DockItem(
                 icon = Icons.Outlined.Shield,
                 label = "Privacy",
-                tint = InkMuted,
                 onClick = onPrivacyClick
             )
             DockItem(
                 icon = Icons.Outlined.Tune,
                 label = "Settings",
-                tint = InkMuted,
                 onClick = onSettingsClick
             )
         }
@@ -788,7 +1213,6 @@ private fun EditorialDock(
 private fun DockItem(
     icon: ImageVector,
     label: String,
-    tint: Color,
     onClick: () -> Unit
 ) {
     Column(
@@ -801,15 +1225,14 @@ private fun DockItem(
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = tint,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(19.dp)
         )
         Spacer(modifier = Modifier.height(3.dp))
         Text(
             text = label,
-            fontSize = 11.sp,
-            color = InkMuted,
-            fontWeight = FontWeight.SemiBold
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -843,17 +1266,21 @@ private fun PrivacyDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(20.dp),
-        containerColor = InkSurface,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
         icon = {
             Icon(
                 imageVector = Icons.Outlined.Shield,
                 contentDescription = null,
-                tint = Vermilion,
+                tint = PrecisionPrimary,
                 modifier = Modifier.size(28.dp)
             )
         },
         title = {
-            Text("Privacy policy", color = InkBone, fontWeight = FontWeight.Bold)
+            Text(
+                "Privacy policy",
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleLarge
+            )
         },
         text = {
             Column {
@@ -890,7 +1317,7 @@ private fun PrivacyBullet(icon: ImageVector, text: String) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Vermilion,
+            tint = PrecisionPrimary,
             modifier = Modifier
                 .size(18.dp)
                 .padding(top = 2.dp)
@@ -898,9 +1325,8 @@ private fun PrivacyBullet(icon: ImageVector, text: String) {
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = text,
-            fontSize = 12.5.sp,
-            lineHeight = 17.sp,
-            color = InkMuted
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

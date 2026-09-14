@@ -11,6 +11,7 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,14 +23,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yashodatech.pdftoolkit.components.LiquidGlassCard
 import com.yashodatech.pdftoolkit.components.LiquidHeader
+import com.yashodatech.pdftoolkit.components.ThemeModePicker
+import com.yashodatech.pdftoolkit.data.PreferencesManager
+import com.yashodatech.pdftoolkit.data.ThemeMode
 import com.yashodatech.pdftoolkit.theme.GlassHeaderGradient
 import com.yashodatech.pdftoolkit.utils.LinkHelper
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
     onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
+    val prefsManager = remember { PreferencesManager(context) }
+    val scope = rememberCoroutineScope()
+    val themeMode by prefsManager.themeMode.collectAsState(
+        initial = ThemeMode.SYSTEM.key
+    )
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -56,6 +66,37 @@ fun SettingsScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
+                // 🎨 Appearance Section — toggle dark / light / system
+                SectionHeader(title = "Appearance")
+
+                LiquidGlassCard {
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "Theme",
+                            fontSize = 14.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Dark, light or follow your system",
+                            fontSize = 11.5.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+
+                        ThemeModePicker(
+                            mode = themeMode,
+                            onSelect = { mode ->
+                                scope.launch { prefsManager.setThemeMode(mode) }
+                            }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
                 // ⭐ App Section
                 SectionHeader(title = "App")
 

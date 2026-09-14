@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import com.yashodatech.pdftoolkit.components.LiquidGlassCard
 import com.yashodatech.pdftoolkit.components.LiquidHeader
 import com.yashodatech.pdftoolkit.components.LiquidPrimaryButton
+import com.yashodatech.pdftoolkit.components.PrecisionFileSelectCard
 import com.yashodatech.pdftoolkit.components.ModernGlassLoader
 import com.yashodatech.pdftoolkit.data.PreferencesManager
 import com.yashodatech.pdftoolkit.data.RecentDoc
@@ -202,21 +203,14 @@ fun UnlockPdfScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}) {
                 ) {
                     Spacer(Modifier.height(16.dp))
 
-                    LiquidGlassCard(onClick = { launcher.launch(arrayOf("application/pdf")) }) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                if (sourceUri != null) Icons.Rounded.SwapHoriz else Icons.Rounded.FileOpen,
-                                contentDescription = null,
-                                tint = Vermilion,
-                                modifier = Modifier.size(22.dp)
-                            )
-                            Spacer(Modifier.width(10.dp))
-                            Text(
-                                if (sourceUri != null) "Change PDF File" else "Select Protected PDF",
-                                fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = InkBone
-                            )
-                        }
-                    }
+                    PrecisionFileSelectCard(
+                        title = if (sourceUri != null) "Change PDF File" else "Select Protected PDF",
+                        subtitle = "Tap to choose a .pdf file",
+                        chipLabel = ".PDF",
+                        gradient = GradientUnlockVibrant,
+                        icon = Icons.Rounded.FileOpen,
+                        onClick = { launcher.launch(arrayOf("application/pdf")) }
+                    )
 
                     if (sourceUri != null) {
                         Spacer(Modifier.height(16.dp))
@@ -231,8 +225,8 @@ fun UnlockPdfScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}) {
                                 Column {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Column(Modifier.weight(1f)) {
-                                            Text(sourceName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = InkBone, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                            Text("$sourceSize", fontSize = 11.sp, color = InkMuted)
+                                            Text(sourceName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = InkBone(), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            Text("$sourceSize", fontSize = 11.sp, color = InkMuted())
                                         }
                                         LockStatusBadge(lockState)
                                     }
@@ -282,10 +276,10 @@ fun UnlockPdfScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}) {
 @Composable
 private fun LockStatusBadge(lockState: PdfUnlocker.LockState?) {
     val (label, tint) = when (lockState) {
-        PdfUnlocker.LockState.NOT_PROTECTED -> "Not protected" to InkMuted
+        PdfUnlocker.LockState.NOT_PROTECTED -> "Not protected" to InkMuted()
         PdfUnlocker.LockState.PERMISSIONS_ONLY -> "Restricted copy/print" to WarningAmber
         PdfUnlocker.LockState.USER_PASSWORD -> "Password protected" to Vermilion
-        null -> "Checking…" to InkFaint
+        null -> "Checking…" to InkFaint()
     }
     Text(
         label,
@@ -312,7 +306,7 @@ private fun PasswordField(
             if (error != null) "Password" else "Enter the PDF password",
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
-            color = error?.let { ErrorRed } ?: InkMuted
+            color = error?.let { ErrorRed } ?: InkMuted()
         )
         Spacer(Modifier.height(6.dp))
         OutlinedTextField(
@@ -321,13 +315,13 @@ private fun PasswordField(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             isError = error != null,
-            textStyle = LocalTextStyle.current.copy(fontSize = 15.sp, color = InkBone),
+            textStyle = LocalTextStyle.current.copy(fontSize = 15.sp, color = InkBone()),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Vermilion,
                 unfocusedBorderColor = InkBorder,
                 errorBorderColor = ErrorRed,
-                focusedTextColor = InkBone,
-                unfocusedTextColor = InkBone,
+                focusedTextColor = InkBone(),
+                unfocusedTextColor = InkBone(),
                 cursorColor = Vermilion,
                 focusedContainerColor = InkSurface,
                 unfocusedContainerColor = InkSurface
@@ -342,7 +336,7 @@ private fun PasswordField(
                     Icon(
                         if (visible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
                         contentDescription = if (visible) "Hide password" else "Show password",
-                        tint = InkMuted
+                        tint = InkMuted()
                     )
                 }
             }
@@ -360,7 +354,7 @@ private fun UnlockHint(lockState: PdfUnlocker.LockState?) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.Info, null, tint = Vermilion, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
-            Text("What happens", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkBone)
+            Text("What happens", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkBone())
         }
         Spacer(Modifier.height(6.dp))
         Text(
@@ -373,7 +367,7 @@ private fun UnlockHint(lockState: PdfUnlocker.LockState?) {
                     "You'll need the password you set. The unlocked copy opens freely with no restictions."
                 null -> ""
             },
-            fontSize = 12.sp, lineHeight = 17.sp, color = InkMuted
+            fontSize = 12.sp, lineHeight = 17.sp, color = InkMuted()
         )
     }
 }
@@ -385,9 +379,9 @@ private fun UnlockEmptyState() {
             Icon(Icons.Rounded.LockOpen, null, tint = Vermilion.copy(alpha = 0.5f), modifier = Modifier.size(46.dp))
         }
         Spacer(Modifier.height(20.dp))
-        Text("No PDF selected", fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = InkMuted)
+        Text("No PDF selected", fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = InkMuted())
         Spacer(Modifier.height(8.dp))
-        Text("Pick a password-protected PDF to unlock it", fontSize = 13.sp, color = InkFaint, textAlign = TextAlign.Center)
+        Text("Pick a password-protected PDF to unlock it", fontSize = 13.sp, color = InkFaint(), textAlign = TextAlign.Center)
     }
 }
 
@@ -406,15 +400,15 @@ private fun UnlockSuccess(
         Spacer(Modifier.weight(0.25f))
         Box(Modifier.size(110.dp).clip(CircleShape).background(Vermilion.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
             Box(Modifier.size(74.dp).clip(CircleShape).background(Vermilion), contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.LockOpen, null, tint = InkBone, modifier = Modifier.size(38.dp))
+                Icon(Icons.Rounded.LockOpen, null, tint = InkBone(), modifier = Modifier.size(38.dp))
             }
         }
         Spacer(Modifier.height(24.dp))
-        Text("Unlocked!", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = InkBone)
+        Text("Unlocked!", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = InkBone())
         Spacer(Modifier.height(8.dp))
-        Text("Saved as $displayName", fontSize = 13.sp, color = InkMuted, textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis)
+        Text("Saved as $displayName", fontSize = 13.sp, color = InkMuted(), textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis)
         Spacer(Modifier.height(8.dp))
-        Text("to Downloads — it now opens without a password", fontSize = 12.sp, color = InkFaint)
+        Text("to Downloads — it now opens without a password", fontSize = 12.sp, color = InkFaint())
         Spacer(Modifier.height(28.dp))
 
         LiquidPrimaryButton(text = "Open Document", onClick = onView)
@@ -424,7 +418,7 @@ private fun UnlockSuccess(
         LiquidPrimaryButton(text = "Unlock Another PDF", onClick = onExportAnother)
         Spacer(Modifier.height(12.dp))
         TextButton(onClick = onBack) {
-            Text("Back to Home", color = InkMuted)
+            Text("Back to Home", color = InkMuted())
         }
     }
 }

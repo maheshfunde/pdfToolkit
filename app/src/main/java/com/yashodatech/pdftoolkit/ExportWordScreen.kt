@@ -29,6 +29,7 @@ import com.yashodatech.pdftoolkit.components.LiquidGlassCard
 import com.yashodatech.pdftoolkit.components.LiquidHeader
 import com.yashodatech.pdftoolkit.components.LiquidPrimaryButton
 import com.yashodatech.pdftoolkit.components.ModernGlassLoader
+import com.yashodatech.pdftoolkit.components.PrecisionFileSelectCard
 import com.yashodatech.pdftoolkit.pdf.PdfWordExporter
 import com.yashodatech.pdftoolkit.theme.*
 import com.google.android.gms.ads.*
@@ -175,21 +176,14 @@ fun ExportWordScreen(onBack: () -> Unit) {
                 ) {
                     Spacer(Modifier.height(16.dp))
 
-                    LiquidGlassCard(onClick = { launcher.launch(arrayOf("application/pdf")) }) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                if (sourceUri != null) Icons.Rounded.SwapHoriz else Icons.Rounded.FileOpen,
-                                contentDescription = null,
-                                tint = Vermilion,
-                                modifier = Modifier.size(22.dp)
-                            )
-                            Spacer(Modifier.width(10.dp))
-                            Text(
-                                if (sourceUri != null) "Change PDF File" else "Select PDF File",
-                                fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = InkBone
-                            )
-                        }
-                    }
+                    PrecisionFileSelectCard(
+                        title = if (sourceUri != null) "Change PDF File" else "Select PDF File",
+                        subtitle = "Tap to choose a .pdf file",
+                        chipLabel = ".PDF",
+                        gradient = GradientWordVibrant,
+                        icon = Icons.Rounded.FileOpen,
+                        onClick = { launcher.launch(arrayOf("application/pdf")) }
+                    )
 
                     if (sourceUri != null) {
                         Spacer(Modifier.height(16.dp))
@@ -203,8 +197,8 @@ fun ExportWordScreen(onBack: () -> Unit) {
                             LiquidGlassCard {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
-                                        Text(sourceName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = InkBone, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Text("$sourceSize • $totalPages page${if (totalPages != 1) "s" else ""}", fontSize = 11.sp, color = InkMuted)
+                                        Text(sourceName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = InkBone(), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text("$sourceSize • $totalPages page${if (totalPages != 1) "s" else ""}", fontSize = 11.sp, color = InkMuted())
                                     }
                                     Icon(Icons.Rounded.Description, null, tint = Vermilion, modifier = Modifier.size(24.dp))
                                 }
@@ -218,13 +212,13 @@ fun ExportWordScreen(onBack: () -> Unit) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Icon(Icons.Rounded.Info, null, tint = Vermilion, modifier = Modifier.size(18.dp))
                                         Spacer(Modifier.width(8.dp))
-                                        Text("Saved as .docx", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkBone)
+                                        Text("Saved as .docx", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkBone())
                                     }
                                     Spacer(Modifier.height(6.dp))
                                     Text(
                                         "Readable text from every page becomes paragraphs in a Word file, " +
                                             "saved to Downloads/PDF Toolkit. Image-only pages have no text to convert.",
-                                        fontSize = 12.sp, lineHeight = 17.sp, color = InkMuted
+                                        fontSize = 12.sp, lineHeight = 17.sp, color = InkMuted()
                                     )
                                 }
                             }
@@ -282,9 +276,9 @@ private fun WordExportEmptyState() {
             Icon(Icons.Rounded.Description, null, tint = Vermilion.copy(alpha = 0.5f), modifier = Modifier.size(46.dp))
         }
         Spacer(Modifier.height(20.dp))
-        Text("No PDF selected", fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = InkMuted)
+        Text("No PDF selected", fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = InkMuted())
         Spacer(Modifier.height(8.dp))
-        Text("Select a PDF to convert to Word", fontSize = 13.sp, color = InkFaint, textAlign = TextAlign.Center)
+        Text("Select a PDF to convert to Word", fontSize = 13.sp, color = InkFaint(), textAlign = TextAlign.Center)
     }
 }
 
@@ -304,15 +298,15 @@ private fun ExportWordSuccess(
         Spacer(Modifier.weight(0.25f))
         Box(Modifier.size(110.dp).clip(CircleShape).background(Vermilion.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
             Box(Modifier.size(74.dp).clip(CircleShape).background(Vermilion), contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.Description, null, tint = InkBone, modifier = Modifier.size(36.dp))
+                Icon(Icons.Rounded.Description, null, tint = InkBone(), modifier = Modifier.size(36.dp))
             }
         }
         Spacer(Modifier.height(24.dp))
-        Text("Word file created!", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = InkBone)
+        Text("Word file created!", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = InkBone())
         Spacer(Modifier.height(8.dp))
-        Text("Saved as $displayName", fontSize = 13.sp, color = InkMuted, textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis)
+        Text("Saved as $displayName", fontSize = 13.sp, color = InkMuted(), textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis)
         Spacer(Modifier.height(8.dp))
-        Text("to Downloads/PDF Toolkit", fontSize = 12.sp, color = InkFaint)
+        Text("to Downloads/PDF Toolkit", fontSize = 12.sp, color = InkFaint())
         Spacer(Modifier.height(28.dp))
 
         LiquidPrimaryButton(text = "Share Word File", onClick = onShare)
@@ -327,7 +321,7 @@ private fun ExportWordSuccess(
         LiquidPrimaryButton(text = "Convert Another PDF", onClick = onExportAnother)
         Spacer(Modifier.height(12.dp))
         TextButton(onClick = onBack) {
-            Text("Back to Home", color = InkMuted)
+            Text("Back to Home", color = InkMuted())
         }
     }
 }

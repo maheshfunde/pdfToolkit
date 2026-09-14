@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.yashodatech.pdftoolkit.components.PrecisionGradientButton
 import com.yashodatech.pdftoolkit.theme.*
 
 
@@ -98,7 +99,8 @@ fun RateAppDialog(
                 Spacer(Modifier.height(24.dp))
 
                 // ── Rate Now Button ─────────────────
-                Button(
+                PrecisionGradientButton(
+                    text = "Rate 5 Stars",
                     onClick = {
                         // ✅ Try Play Store app first, fallback to browser
                         try {
@@ -117,39 +119,11 @@ fun RateAppDialog(
                         }
                         onRated()
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent
-                    ),
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.horizontalGradient(ButtonSapphireGradient),
-                                RoundedCornerShape(14.dp)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Rounded.Star,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                "Rate 5 Stars",
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 16.sp
-                            )
-                        }
-                    }
-                }
+                    height = 50.dp,
+                    cornerRadius = 14.dp,
+                    gradient = ButtonSapphireGradient,
+                    icon = Icons.Rounded.Star
+                )
 
                 Spacer(Modifier.height(12.dp))
 
