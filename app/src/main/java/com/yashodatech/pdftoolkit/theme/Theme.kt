@@ -84,26 +84,26 @@ private val DarkColorScheme = darkColorScheme(
     tertiaryContainer = Color(0xFF3323CC),
     onTertiaryContainer = Color(0xFFE2DFFF),
 
-    background = Color(0xFF0A0E16),            // deep near-black navy canvas
-    onBackground = Color(0xFFF0F4FC),
-    surface = Color(0xFF0E1422),
-    onSurface = Color(0xFFF0F4FC),
-    surfaceVariant = Color(0xFF2B3648),
-    onSurfaceVariant = Color(0xFFC7D2E3),
+    background = NeutralCanvasDark,            // deep charcoal neutral canvas
+    onBackground = NeutralTextPrimaryDark,
+    surface = NeutralCanvasDark,
+    onSurface = NeutralTextPrimaryDark,
+    surfaceVariant = Color(0xFF26282E),
+    onSurfaceVariant = NeutralTextSecondaryDark,
 
-    surfaceDim = Color(0xFF070A10),
-    surfaceBright = Color(0xFF1B2434),
-    surfaceContainerLowest = Color(0xFF141B28),  // cards — raised a clear step above canvas
-    surfaceContainerLow = Color(0xFF181F2D),
-    surfaceContainer = Color(0xFF1E2736),
-    surfaceContainerHigh = Color(0xFF283346),    // tab strip / segmented control
-    surfaceContainerHighest = Color(0xFF323E53),
+    surfaceDim = Color(0xFF0B0C0E),
+    surfaceBright = Color(0xFF2C2F36),
+    surfaceContainerLowest = NeutralCardDark,  // cards — crisp dark charcoal
+    surfaceContainerLow = Color(0xFF16181B),
+    surfaceContainer = Color(0xFF202327),
+    surfaceContainerHigh = Color(0xFF282B31),    // tab strip / segmented control
+    surfaceContainerHighest = Color(0xFF32363D),
 
-    inverseSurface = Color(0xFFF0F4FC),
-    inverseOnSurface = Color(0xFF223043),
+    inverseSurface = NeutralTextPrimaryDark,
+    inverseOnSurface = NeutralCanvasDark,
 
-    outline = Color(0xFFC7D2E3),
-    outlineVariant = Color(0xFF39465A),
+    outline = Color(0xFF6B7280),
+    outlineVariant = NeutralCardBorderDark,
 
     error = Color(0xFFFFB4AC),
     onError = Color(0xFF410002),

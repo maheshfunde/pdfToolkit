@@ -28,31 +28,51 @@ val PrecisionOnTertiary = Color(0xFFFFFFFF)
 val PrecisionTertiaryContainer = Color(0xFF645EFB)
 val PrecisionOnTertiaryContainer = Color(0xFFFFFBFF)
 
+// ═══════════════════════════════════════════════════════════
+//  MODERN NEUTRAL FOUNDATION & TOOL ACCENT TOKENS
+// ═══════════════════════════════════════════════════════════
+val NeutralCanvasLight = Color(0xFFF8F9FA)
+val NeutralCardLight = Color(0xFFFFFFFF)
+val NeutralCardBorderLight = Color(0xFFE5E7EB)
+val NeutralTextPrimaryLight = Color(0xFF111827)
+val NeutralTextSecondaryLight = Color(0xFF6B7280)
+
+val NeutralCanvasDark = Color(0xFF0F1012)
+val NeutralCardDark = Color(0xFF1E2024)
+val NeutralCardBorderDark = Color(0xFF2C2F36)
+val NeutralTextPrimaryDark = Color(0xFFF9FAFB)
+val NeutralTextSecondaryDark = Color(0xFF9CA3AF)
+
+// Restrained Tool Accent Colors (strictly for icons, badges, indicators, CTAs)
+val ToolScanAccent = Color(0xFF4F46E5)      // Electric Indigo
+val ToolConvertAccent = Color(0xFF059669)   // Emerald Green
+val ToolOrganizeAccent = Color(0xFF2563EB)  // Royal Azure
+val ToolCompressAccent = Color(0xFFEA580C)  // Coral Amber
+val ToolSecurityAccent = Color(0xFFDC2626)  // Vermilion
+val ToolReadAccent = Color(0xFF0D9488)      // Cyan Teal
+
 // ── Surfaces (paper tiering) ───────────────────────────────
-// Cool paper that mirrors the navy dark palette: a faintly-tinted canvas,
-// pure-white cards that lift a clear step off it, and a cool slate container
-// ramp — so light and dark read as the same design language.
-val PrecisionBackground = Color(0xFFF5F7FC)
-val PrecisionOnBackground = Color(0xFF0E1526)
-val PrecisionSurface = Color(0xFFF5F7FC)
-val PrecisionOnSurface = Color(0xFF0E1526)
-val PrecisionSurfaceVariant = Color(0xFFDCE4F1)
-val PrecisionOnSurfaceVariant = Color(0xFF545F73)
-val PrecisionSurfaceDim = Color(0xFFE2E8F4)
-val PrecisionSurfaceBright = Color(0xFFF5F7FC)
+val PrecisionBackground = NeutralCanvasLight
+val PrecisionOnBackground = NeutralTextPrimaryLight
+val PrecisionSurface = NeutralCanvasLight
+val PrecisionOnSurface = NeutralTextPrimaryLight
+val PrecisionSurfaceVariant = Color(0xFFF3F4F6)
+val PrecisionOnSurfaceVariant = NeutralTextSecondaryLight
+val PrecisionSurfaceDim = Color(0xFFE5E7EB)
+val PrecisionSurfaceBright = NeutralCanvasLight
 
-val PrecisionSurfaceLowest = Color(0xFFFFFFFF)  // cards, headers, docked bars
-val PrecisionSurfaceLow = Color(0xFFEEF2F9)
-val PrecisionSurfaceContainer = Color(0xFFE5EAF4)
-val PrecisionSurfaceHigh = Color(0xFFDCE4F1)
-val PrecisionSurfaceHighest = Color(0xFFCDD6E6)
+val PrecisionSurfaceLowest = NeutralCardLight  // cards, headers, docked bars
+val PrecisionSurfaceLow = Color(0xFFF9FAFB)
+val PrecisionSurfaceContainer = Color(0xFFF3F4F6)
+val PrecisionSurfaceHigh = Color(0xFFE5E7EB)
+val PrecisionSurfaceHighest = Color(0xFFD1D5DB)
 
-val PrecisionInverseSurface = Color(0xFF1B2434)
-val PrecisionInverseOnSurface = Color(0xFFE8EEF8)
+val PrecisionInverseSurface = Color(0xFF111827)
+val PrecisionInverseOnSurface = Color(0xFFF9FAFB)
 
 // ── Lines & outlines ───────────────────────────────────────
-val PrecisionOutline = Color(0xFF687390)
-val PrecisionOutlineVariant = Color(0xFFDCE4F1)
+val PrecisionOutline = Color(0xFF9CA3AF)
+val PrecisionOutlineVariant = NeutralCardBorderLight
 
 // ── Error ────────────────────────────────────────────────────
 val PrecisionError = Color(0xFFBA1A1A)
