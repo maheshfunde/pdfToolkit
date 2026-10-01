@@ -60,6 +60,8 @@ import com.google.android.gms.ads.*
 import com.yashodatech.pdftoolkit.components.PrecisionCategoryPill
 import com.yashodatech.pdftoolkit.components.PrecisionCard
 import com.yashodatech.pdftoolkit.components.PrecisionSegmentTabs
+import com.yashodatech.pdftoolkit.components.ModernSecurityBadge
+import com.yashodatech.pdftoolkit.components.ModernBadge
 import com.yashodatech.pdftoolkit.data.PreferencesManager
 import com.yashodatech.pdftoolkit.theme.*
 import kotlinx.coroutines.Dispatchers
@@ -693,12 +695,17 @@ fun HomeScreen(
                 ) {
                     Spacer(modifier = Modifier.height(4.dp))
                     HubHeader(onSettingsClick = onSettingsClick)
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                    // Feature showcase — auto-animated, ad-like banner. It's the
-                    // filler when there's nothing recent to show; the moment any
-                    // docs come back, the recents shelf (with preview thumbnails)
-                    // takes this band instead.
+                    // 1. Prominent Hero Import / Open Card
+                    HeroImportCard(onClick = { onToolClick(Screen.ViewPdf.route) })
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // 2. High-intent Quick Actions
+                    QuickActionsRow(onToolClick = onToolClick)
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // 3. Recent documents shelf or feature showcase
                     if (recentDocs.isEmpty()) {
                         FeatureShowcaseCarousel(onToolClick = onToolClick)
                     } else {
@@ -706,19 +713,7 @@ fun HomeScreen(
                     }
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Quick create — the gateway
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = fadeIn(tween(450, delayMillis = 90)) + slideInVertically(tween(450, easing = FastOutSlowInEasing)) { it / 6 },
-                        label = "quickEnter"
-                    ) {
-                        Column {
-                            QuickCreatePanel(tools = quickCreateTools, onToolClick = onToolClick)
-                            Spacer(modifier = Modifier.height(14.dp))
-                        }
-                    }
-
-                    // Lifecycle catalogue — swipe between segments; the tab bubble
+                    // 4. Lifecycle catalogue — swipe between segments; the tab bubble
                     // tracks the live swipe, the content rises in like a bubble.
                     PrecisionSegmentTabs(
                         tabs = lifecycleSections.map { it.title },
@@ -799,7 +794,7 @@ fun HomeScreen(
 
 
 // ═══════════════════════════════════════════════════════════
-//  HUB HEADER — headline brand line + quiet settings glyph
+//  HUB HEADER — headline brand line + security badge + settings
 // ═══════════════════════════════════════════════════════════
 @Composable
 private fun HubHeader(onSettingsClick: () -> Unit) {
@@ -826,19 +821,20 @@ private fun HubHeader(onSettingsClick: () -> Unit) {
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = "PDF Toolkit",
-                style = MaterialTheme.typography.displayMedium,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            PrecisionBadge2(text = "Offline")
+            ModernSecurityBadge()
             Spacer(modifier = Modifier.width(10.dp))
             Box(
                 modifier = Modifier
                     .size(38.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
                     .clickable(onClick = onSettingsClick),
                 contentAlignment = Alignment.Center
             ) {
@@ -853,180 +849,208 @@ private fun HubHeader(onSettingsClick: () -> Unit) {
     }
 }
 
-@Composable
-private fun PrecisionBadge2(text: String) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(SuccessGreen.copy(alpha = 0.12f))
-            .padding(horizontal = 9.dp, vertical = 5.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .clip(CircleShape)
-                    .background(SuccessGreen)
-            )
-            Spacer(Modifier.width(5.dp))
-            Text(
-                text = text,
-                style = MaterialTheme.typography.labelSmall,
-                color = SuccessGreen
-            )
-        }
-    }
-}
-
-
 // ═══════════════════════════════════════════════════════════
-//  HERO READER CARD — gradient surface, pill CTA → View & Read
+//  HERO IMPORT CARD — prominent top action
 // ═══════════════════════════════════════════════════════════
 @Composable
-private fun QuickCreatePanel(tools: List<ToolItem>, onToolClick: (String) -> Unit) {
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    Brush.linearGradient(
-                        listOf(
-                            PrecisionPrimary.copy(alpha = 0.12f),
-                            MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0f)
-                        )
-                    )
-                )
-                .padding(14.dp)
-        ) {
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(PrecisionPrimary.copy(alpha = 0.12f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Add,
-                            contentDescription = null,
-                            tint = PrecisionPrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            "Create a PDF",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            "Make a document from images or Word",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    tools.forEach { tool ->
-                        Box(modifier = Modifier.weight(1f)) {
-                            PrecisionQuickTile(tool = tool, onClick = { onToolClick(tool.route) })
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PrecisionQuickTile(tool: ToolItem, onClick: () -> Unit) {
-    var isPressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1.0f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
-        label = "bouncyScale"
-    )
-    Box(
+private fun HeroImportCard(onClick: () -> Unit) {
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(PrecisionPrimary.copy(alpha = 0.10f))
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = {
-                        isPressed = true
-                        tryAwaitRelease()
-                        isPressed = false
-                    },
-                    onTap = { onClick() }
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(ToolOrganizeAccent.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.FolderOpen,
+                    contentDescription = "Open Document",
+                    tint = ToolOrganizeAccent,
+                    modifier = Modifier.size(24.dp)
                 )
             }
-            .padding(12.dp)
-    ) {
-        Column {
-            Icon(
-                imageVector = tool.icon,
-                contentDescription = tool.title,
-                tint = PrecisionPrimary,
-                modifier = Modifier.size(20.dp)
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Open / Import PDF",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "View, read, print, or edit any PDF document",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            FilledTonalButton(
+                onClick = onClick,
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = ToolOrganizeAccent.copy(alpha = 0.10f),
+                    contentColor = ToolOrganizeAccent
+                ),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    text = "Browse",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  QUICK ACTIONS ROW — 4 Core Tools (Scan, Merge, Compress, Convert)
+// ═══════════════════════════════════════════════════════════
+@Composable
+private fun QuickActionsRow(onToolClick: (String) -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "QUICK ACTIONS",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 0.5.sp
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            QuickActionTile(
+                title = "Scan",
+                icon = Icons.Outlined.DocumentScanner,
+                accent = ToolScanAccent,
+                modifier = Modifier.weight(1f),
+                onClick = { onToolClick(Screen.ImageToPdf.route) }
             )
-            Spacer(modifier = Modifier.height(6.dp))
+            QuickActionTile(
+                title = "Merge",
+                icon = Icons.AutoMirrored.Rounded.CallMerge,
+                accent = ToolOrganizeAccent,
+                modifier = Modifier.weight(1f),
+                onClick = { onToolClick(Screen.MergePdf.route) }
+            )
+            QuickActionTile(
+                title = "Compress",
+                icon = Icons.Rounded.Compress,
+                accent = ToolCompressAccent,
+                modifier = Modifier.weight(1f),
+                onClick = { onToolClick(Screen.CompressPdf.route) }
+            )
+            QuickActionTile(
+                title = "Convert",
+                icon = Icons.Outlined.Description,
+                accent = ToolConvertAccent,
+                modifier = Modifier.weight(1f),
+                onClick = { onToolClick(Screen.WordToPdf.route) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuickActionTile(
+    title: String,
+    icon: ImageVector,
+    accent: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp, horizontal = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(accent.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = accent,
+                    modifier = Modifier.size(19.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(7.dp))
             Text(
-                text = tool.title,
-                style = MaterialTheme.typography.titleSmall,
+                text = title,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Text(
-                text = tool.subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
         }
     }
 }
 
-
 // ═══════════════════════════════════════════════════════════
-//  TOOL GRID — 2-column cards, domain-washed
+//  TOOL GRID — Responsive multi-column layout (2 phone, 3-4 tablet)
 // ═══════════════════════════════════════════════════════════
 @Composable
 private fun ToolGrid(matches: List<ToolItem>, onToolClick: (String) -> Unit) {
-    val chunked = matches.chunked(2)
-    // Cards wrap their intrinsic height instead of stretching to fill all
-    // available space — keeps compact, consistent sizing regardless of
-    // how much vertical room the parent provides.
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        for (rowItems in chunked) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                for (tool in rowItems) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        PrecisionToolCard(tool = tool, onClick = { onToolClick(tool.route) })
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val columns = if (maxWidth >= 840.dp) 4 else if (maxWidth >= 600.dp) 3 else 2
+        val chunked = matches.chunked(columns)
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            for (rowItems in chunked) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    for (tool in rowItems) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            PrecisionToolCard(tool = tool, onClick = { onToolClick(tool.route) })
+                        }
                     }
-                }
-                if (rowItems.size == 1) {
-                    Spacer(modifier = Modifier.weight(1f))
+                    val missing = columns - rowItems.size
+                    if (missing > 0) {
+                        for (i in 0 until missing) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
                 }
             }
         }
@@ -1038,17 +1062,16 @@ private fun PrecisionToolCard(tool: ToolItem, onClick: () -> Unit) {
     var isPressed by remember { mutableStateOf(false) }
 
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1.0f,
+        targetValue = if (isPressed) 0.97f else 1.0f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "bouncyScale"
     )
 
     val accent = categoryAccent(tool.category)
 
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 110.dp)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -1063,29 +1086,20 @@ private fun PrecisionToolCard(tool: ToolItem, onClick: () -> Unit) {
                     onTap = { onClick() }
                 )
             },
-        shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.linearGradient(
-                        listOf(
-                            accent.copy(alpha = 0.10f),
-                            MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0f)
-                        )
-                    )
-                )
+                .padding(14.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Domain-tinted icon chip
                 Box(
                     modifier = Modifier
                         .size(38.dp)
@@ -1097,52 +1111,37 @@ private fun PrecisionToolCard(tool: ToolItem, onClick: () -> Unit) {
                         imageVector = tool.icon,
                         contentDescription = tool.title,
                         tint = accent,
-                        modifier = Modifier.size(19.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(7.dp))
-
-                Column {
-                    Text(
-                        text = tool.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = tool.subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = tool.badge,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = accent,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
-                        contentDescription = null,
-                        tint = accent,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
+                ModernBadge(
+                    text = tool.badge,
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    textColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = tool.title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = tool.subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
@@ -1150,10 +1149,13 @@ private fun PrecisionToolCard(tool: ToolItem, onClick: () -> Unit) {
 @Composable
 private fun categoryAccent(category: String): Color {
     return when (category) {
-        "Convert" -> DomainAmber
-        "Organize" -> DomainIndigo
-        "Optimize", "Protect" -> DomainEmerald
-        else -> PrecisionPrimary
+        "Convert" -> ToolConvertAccent
+        "Organize" -> ToolOrganizeAccent
+        "Optimize", "Compress" -> ToolCompressAccent
+        "Protect" -> ToolSecurityAccent
+        "Scan" -> ToolScanAccent
+        "View" -> ToolReadAccent
+        else -> ToolOrganizeAccent
     }
 }
 
