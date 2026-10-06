@@ -1,5 +1,6 @@
 package com.yashodatech.pdftoolkit
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -14,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -21,12 +23,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.yashodatech.pdftoolkit.components.LiquidGlassCard
-import com.yashodatech.pdftoolkit.components.LiquidHeader
+import com.yashodatech.pdftoolkit.components.ModernAppHeader
 import com.yashodatech.pdftoolkit.components.ThemeModePicker
 import com.yashodatech.pdftoolkit.data.PreferencesManager
 import com.yashodatech.pdftoolkit.data.ThemeMode
-import com.yashodatech.pdftoolkit.theme.GlassHeaderGradient
 import com.yashodatech.pdftoolkit.utils.LinkHelper
 import kotlinx.coroutines.launch
 
@@ -46,42 +46,54 @@ fun SettingsScreen(
         color = MaterialTheme.colorScheme.background
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .systemBarsPadding()
+            modifier = Modifier.fillMaxSize()
         ) {
-            // Liquid Gradient Header
-            LiquidHeader(
+            // Modern Standardized Header
+            ModernAppHeader(
                 title = "Settings",
                 subtitle = "App preferences & legal information",
                 icon = Icons.Outlined.Tune,
-                gradientColors = GlassHeaderGradient,
-                onBackClick = onBackClick,
-                statusBadge = "v${Config.APP_VERSION}"
+                accentColor = MaterialTheme.colorScheme.primary,
+                onBack = onBackClick,
+                actions = {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                    ) {
+                        Text(
+                            text = "v${Config.APP_VERSION}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
             )
 
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 16.dp, vertical = 14.dp)
             ) {
                 // 🎨 Appearance Section — toggle dark / light / system
                 SectionHeader(title = "Appearance")
 
-                LiquidGlassCard {
+                ModernSettingsCard {
                     Column(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
                             text = "Theme",
-                            fontSize = 14.5.sp,
+                            style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "Dark, light or follow your system",
-                            fontSize = 11.5.sp,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 12.dp)
                         )
@@ -95,12 +107,12 @@ fun SettingsScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // ⭐ App Section
                 SectionHeader(title = "App")
 
-                LiquidGlassCard {
+                ModernSettingsCard {
                     SettingsItem(
                         icon = Icons.Outlined.Star,
                         iconBgColor = Color(0x24E4572E),
@@ -133,12 +145,12 @@ fun SettingsScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // 💬 Support Section
                 SectionHeader(title = "Support")
 
-                LiquidGlassCard {
+                ModernSettingsCard {
                     SettingsItem(
                         icon = Icons.Outlined.Email,
                         iconBgColor = Color(0x24E4572E),
@@ -149,12 +161,12 @@ fun SettingsScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // 📜 Legal Section
                 SectionHeader(title = "Legal")
 
-                LiquidGlassCard {
+                ModernSettingsCard {
                     SettingsItem(
                         icon = Icons.Outlined.PrivacyTip,
                         iconBgColor = Color(0x24BE123C),
@@ -179,7 +191,7 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 // ℹ️ App Info
-                LiquidGlassCard {
+                ModernSettingsCard {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -189,7 +201,7 @@ fun SettingsScreen(
                         Surface(
                             modifier = Modifier.size(54.dp),
                             shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
@@ -205,14 +217,14 @@ fun SettingsScreen(
 
                         Text(
                             text = Config.APP_NAME,
-                            fontSize = 17.sp,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
 
                         Text(
                             text = "Version ${Config.APP_VERSION}",
-                            fontSize = 12.sp,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
@@ -220,7 +232,7 @@ fun SettingsScreen(
 
                         Text(
                             text = "Merge • Split • Compress • Convert",
-                            fontSize = 11.5.sp,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
                         )
@@ -229,30 +241,51 @@ fun SettingsScreen(
 
                         Text(
                             text = "100% Offline & Secure",
-                            fontSize = 11.sp,
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(28.dp))
             }
         }
     }
 }
 
 @Composable
+private fun ModernSettingsCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            content = content
+        )
+    }
+}
+
+@Composable
 private fun SectionHeader(title: String) {
     Text(
-        text = title,
-        fontSize = 13.sp,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
+        text = title.uppercase(),
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 0.6.sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(
             start = 4.dp,
-            bottom = 6.dp,
-            top = 2.dp
+            bottom = 8.dp,
+            top = 4.dp
         )
     )
 }
@@ -269,12 +302,13 @@ private fun SettingsItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
             .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 12.dp),
+            .padding(horizontal = 6.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Surface(
-            modifier = Modifier.size(40.dp),
+            modifier = Modifier.size(42.dp),
             shape = RoundedCornerShape(12.dp),
             color = iconBgColor
         ) {
@@ -283,23 +317,24 @@ private fun SettingsItem(
                     imageVector = icon,
                     contentDescription = title,
                     tint = iconColor,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(22.dp)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(14.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                fontSize = 14.5.sp,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = subtitle,
-                fontSize = 11.5.sp,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -316,8 +351,8 @@ private fun SettingsItem(
 @Composable
 private fun SettingsDivider() {
     HorizontalDivider(
-        modifier = Modifier.padding(start = 64.dp),
-        thickness = 0.5.dp,
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+        modifier = Modifier.padding(start = 56.dp),
+        thickness = 1.dp,
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
     )
 }

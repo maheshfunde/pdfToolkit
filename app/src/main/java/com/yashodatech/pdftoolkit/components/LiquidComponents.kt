@@ -3,6 +3,7 @@ package com.yashodatech.pdftoolkit.components
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -607,13 +608,12 @@ fun PrecisionSegmentTabs(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), RoundedCornerShape(14.dp))
             .padding(4.dp)
     ) {
-        // Sliding liquid bubble — one cell wide, full row height.
-        // rowWidth/rowHeight are in px; convert to dp via the density factor so a
-        // "cell" stays one cell regardless of screen density.
+        // Sliding bubble — one cell wide, full row height
         if (ready) {
             val pxPerDp = density.density
             val cellWidth = rowWidth / tabs.size.toFloat()
@@ -633,8 +633,9 @@ fun PrecisionSegmentTabs(
                     .offset(x = bubbleX)
                     .width(bubbleWidth)
                     .height(bubbleHeight)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(PrimaryIndigo.copy(alpha = 0.16f))
+                    .border(BorderStroke(1.dp, PrimaryIndigo.copy(alpha = 0.45f)), RoundedCornerShape(10.dp))
             )
         }
 
@@ -652,7 +653,7 @@ fun PrecisionSegmentTabs(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(10.dp))
                         .clickable { onSelect(index) }
                         .padding(vertical = 10.dp),
                     contentAlignment = Alignment.Center
@@ -660,9 +661,9 @@ fun PrecisionSegmentTabs(
                     Text(
                         text = title,
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                        color = if (selected) MaterialTheme.colorScheme.onSurface
-                        else MaterialTheme.colorScheme.onSurfaceVariant
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                        color = if (selected) PrimaryIndigo
+                        else MaterialTheme.colorScheme.outline
                     )
                 }
             }

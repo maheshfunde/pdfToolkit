@@ -29,43 +29,82 @@ val PrecisionTertiaryContainer = Color(0xFF645EFB)
 val PrecisionOnTertiaryContainer = Color(0xFFFFFBFF)
 
 // ═══════════════════════════════════════════════════════════
-//  MODERN NEUTRAL FOUNDATION & TOOL ACCENT TOKENS
+//  DESIGN TOKENS FROM SPEC (MOCKUP PALETTE)
 // ═══════════════════════════════════════════════════════════
-val NeutralCanvasLight = Color(0xFFF8F9FA)
-val NeutralCardLight = Color(0xFFFFFFFF)
-val NeutralCardBorderLight = Color(0xFFE5E7EB)
-val NeutralTextPrimaryLight = Color(0xFF111827)
-val NeutralTextSecondaryLight = Color(0xFF6B7280)
+// Recommended Dark Color Palette (No Blue)
+val DarkBackground = Color(0xFF0D0E10)
+val DarkPrimarySurface = Color(0xFF16181C)
+val DarkElevatedSurface = Color(0xFF1D2025)
+val DarkHighlightSurface = Color(0xFF24272D)
+val DarkBorder = Color(0xFF2B2F36)
+val DarkTextPrimary = Color(0xFFF9FAFB)      // Crisp white
+val DarkTextSecondary = Color(0xFFE5E7EB)    // Dark white (neutral light silver-gray, NO blue)
+val DarkTextMuted = Color(0xFFA1A1AA)        // Neutral light-medium gray (NO blue)
 
-val NeutralCanvasDark = Color(0xFF0F1012)
-val NeutralCardDark = Color(0xFF1E2024)
-val NeutralCardBorderDark = Color(0xFF2C2F36)
-val NeutralTextPrimaryDark = Color(0xFFF9FAFB)
-val NeutralTextSecondaryDark = Color(0xFF9CA3AF)
+// Accent Colors (No Blue)
+val AccentPrimaryScan = Color(0xFFEF4444)       // Primary / Scan (#EF4444 app red)
+val AccentConvertCreate = Color(0xFF34D399)     // Convert / Create (#34D399)
+val AccentCompressOptimize = Color(0xFFFBBF24)  // Compress / Optimize (#FBBF24)
+val AccentSecurityUnlock = Color(0xFFF87171)    // Security / Unlock (#F87171)
+val AccentOrganizeEdit = Color(0xFFF472B6)      // Organize / Edit (#F472B6)
+val AccentSuccess = Color(0xFF34D399)
+val AccentWarning = Color(0xFFF59E0B)
 
-// Restrained Tool Accent Colors (strictly for icons, badges, indicators, CTAs)
-val ToolScanAccent = Color(0xFF4F46E5)      // Electric Indigo
-val ToolConvertAccent = Color(0xFF059669)   // Emerald Green
-val ToolOrganizeAccent = Color(0xFF2563EB)  // Royal Azure
-val ToolCompressAccent = Color(0xFFEA580C)  // Coral Amber
-val ToolSecurityAccent = Color(0xFFDC2626)  // Vermilion
-val ToolReadAccent = Color(0xFF0D9488)      // Cyan Teal
+val PrimaryIndigo = AccentPrimaryScan
+
+// Semantic Aliases
+val SemanticSuccess = AccentConvertCreate
+val SemanticWarning = AccentCompressOptimize
+val SemanticDanger = AccentSecurityUnlock
+val SemanticInfo = AccentPrimaryScan
+val SemanticSecurity = AccentSecurityUnlock
+
+// Light Theme (White + Red symbols like icon of the app)
+val LightBackground = Color(0xFFF8F9FA)
+val LightPrimarySurface = Color(0xFFFFFFFF)    // Pure White components
+val LightElevatedSurface = Color(0xFFFFFFFF)
+val LightBorder = Color(0xFFE5E7EB)
+val LightTextPrimary = Color(0xFF111827)
+val LightTextSecondary = Color(0xFF6B7280)
+val LightTextMuted = Color(0xFF9CA3AF)
+val LightAccentRed = Color(0xFFDC2626)         // App icon red
+val LightAccentRedTint = Color(0xFFFEE2E2)     // 10% red tint
+
+val NeutralCanvasLight = LightBackground
+val NeutralCardLight = LightPrimarySurface
+val NeutralCardBorderLight = LightBorder
+val NeutralTextPrimaryLight = LightTextPrimary
+val NeutralTextSecondaryLight = LightTextSecondary
+
+val NeutralCanvasDark = DarkBackground
+val NeutralCardDark = DarkPrimarySurface
+val NeutralCardBorderDark = DarkBorder
+val NeutralTextPrimaryDark = DarkTextPrimary
+val NeutralTextSecondaryDark = DarkTextSecondary
+
+// Tool Accent Mapping
+val ToolScanAccent = AccentPrimaryScan
+val ToolConvertAccent = AccentConvertCreate
+val ToolOrganizeAccent = AccentOrganizeEdit
+val ToolCompressAccent = AccentCompressOptimize
+val ToolSecurityAccent = AccentSecurityUnlock
+val ToolReadAccent = AccentPrimaryScan
 
 // ── Surfaces (paper tiering) ───────────────────────────────
-val PrecisionBackground = NeutralCanvasLight
-val PrecisionOnBackground = NeutralTextPrimaryLight
-val PrecisionSurface = NeutralCanvasLight
-val PrecisionOnSurface = NeutralTextPrimaryLight
+val PrecisionBackground = LightBackground
+val PrecisionOnBackground = LightTextPrimary
+val PrecisionSurface = LightPrimarySurface          // Pure White
+val PrecisionOnSurface = LightTextPrimary           // Black text #111827
 val PrecisionSurfaceVariant = Color(0xFFF3F4F6)
-val PrecisionOnSurfaceVariant = NeutralTextSecondaryLight
+val PrecisionOnSurfaceVariant = LightTextSecondary
 val PrecisionSurfaceDim = Color(0xFFE5E7EB)
-val PrecisionSurfaceBright = NeutralCanvasLight
+val PrecisionSurfaceBright = LightPrimarySurface
 
-val PrecisionSurfaceLowest = NeutralCardLight  // cards, headers, docked bars
-val PrecisionSurfaceLow = Color(0xFFF9FAFB)
-val PrecisionSurfaceContainer = Color(0xFFF3F4F6)
-val PrecisionSurfaceHigh = Color(0xFFE5E7EB)
-val PrecisionSurfaceHighest = Color(0xFFD1D5DB)
+val PrecisionSurfaceLowest = LightPrimarySurface    // #FFFFFF Pure White cards
+val PrecisionSurfaceLow = LightPrimarySurface       // #FFFFFF Pure White
+val PrecisionSurfaceContainer = LightPrimarySurface // #FFFFFF Pure White
+val PrecisionSurfaceHigh = Color(0xFFF3F4F6)
+val PrecisionSurfaceHighest = Color(0xFFE5E7EB)
 
 val PrecisionInverseSurface = Color(0xFF111827)
 val PrecisionInverseOnSurface = Color(0xFFF9FAFB)
@@ -154,7 +193,6 @@ val SecondaryPurple = PrecisionSecondary
 val CompressColor = PrecisionPrimary
 
 // ── Light background aliases ───────────────────────────────
-val LightBackground = PrecisionBackground
 val LightOnBackground = PrecisionOnBackground
 val LightSurface = PrecisionSurface
 val LightOnSurface = PrecisionOnSurface
@@ -163,7 +201,6 @@ val LightOnSurfaceVariant = PrecisionOnSurfaceVariant
 val LightOutline = PrecisionOutline
 val LightError = PrecisionError
 
-val DarkBackground = PrecisionSurfaceDim
 val DarkOnBackground = PrecisionOnSurface
 val DarkSurface = PrecisionSurfaceDim
 val DarkOnSurface = PrecisionOnSurface

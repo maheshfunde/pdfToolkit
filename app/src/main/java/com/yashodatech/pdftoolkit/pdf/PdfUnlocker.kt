@@ -2,6 +2,7 @@ package com.yashodatech.pdftoolkit.pdf
 
 import android.content.ContentValues
 import android.content.Context
+import android.util.Log
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
@@ -10,6 +11,7 @@ import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfReader
 import com.itextpdf.kernel.pdf.PdfWriter
 import com.itextpdf.kernel.pdf.ReaderProperties
+import com.itextpdf.kernel.utils.XmlProcessorCreator
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -24,6 +26,12 @@ import kotlinx.coroutines.withContext
  * the same document, fully unlocked.
  */
 class PdfUnlocker(private val context: Context) {
+
+    init {
+        try {
+            XmlProcessorCreator.setXmlParserFactory(AndroidXmlParserFactory())
+        } catch (_: Throwable) {}
+    }
 
     /** What kind of lock (if any) a PDF carries. */
     enum class LockState { NOT_PROTECTED, USER_PASSWORD, PERMISSIONS_ONLY }
@@ -48,6 +56,7 @@ class PdfUnlocker(private val context: Context) {
         if (!password.isNullOrEmpty()) props.setPassword(password.toByteArray())
         return try {
             PdfReader(src.absolutePath, props).use { reader ->
+                reader.setUnethicalReading(true)
                 if (reader.isEncrypted) LockState.PERMISSIONS_ONLY
                 else LockState.NOT_PROTECTED
             }
@@ -80,7 +89,8 @@ class PdfUnlocker(private val context: Context) {
             if (!password.isNullOrEmpty()) props.setPassword(password.toByteArray())
 
             PdfReader(src.absolutePath, props).use { reader ->
-                PdfDocument(reader, PdfWriter(FileOutputStream(outFile))).use { pdf ->
+                reader.setUnethicalReading(true)
+                SafePdfDocument(reader, PdfWriter(FileOutputStream(outFile))).use { pdf ->
                     // Touch every page so the whole document is carried over and we
                     // can report progress; closing the document then writes it out
                     // fully decrypted.
@@ -102,9 +112,49 @@ class PdfUnlocker(private val context: Context) {
         }
     }
 
+    /**
+     * Decrypts [sourceUri] using [password] and writes the unencrypted PDF to a temporary file
+     * in the app cache directory. Throws [BadPasswordException] if password is wrong or required.
+     */
+    suspend fun decryptToTempFile(
+        sourceUri: Uri,
+        password: String?
+    ): File = withContext(Dispatchers.IO) {
+        val src = copyToTemp(sourceUri)
+        val outFile = File.createTempFile("view_unlocked_${System.currentTimeMillis()}_", ".pdf", context.cacheDir)
+        try {
+            val props = ReaderProperties()
+            if (!password.isNullOrEmpty()) props.setPassword(password.toByteArray())
+
+            PdfReader(src.absolutePath, props).use { reader ->
+                reader.setUnethicalReading(true)
+                SafePdfDocument(reader, PdfWriter(FileOutputStream(outFile))).use { pdf ->
+                    val total = pdf.numberOfPages
+                    for (i in 1..total) {
+                        pdf.getPage(i)
+                    }
+                }
+            }
+            outFile
+        } catch (t: Throwable) {
+            outFile.delete()
+            throw t
+        } finally {
+            src.delete()
+        }
+    }
+
     private fun copyToTemp(sourceUri: Uri): File {
         val f = File.createTempFile("unlock_src_", ".pdf", context.cacheDir)
-        context.contentResolver.openInputStream(sourceUri)?.use { i ->
+        val stream = try {
+            context.contentResolver.openInputStream(sourceUri)
+        } catch (_: Exception) {
+            if (sourceUri.scheme == "file" && sourceUri.path != null) {
+                java.io.FileInputStream(java.io.File(sourceUri.path!!))
+            } else null
+        } ?: throw IOException("Cannot read PDF input stream")
+
+        stream.use { i ->
             f.outputStream().use { i.copyTo(it) }
         }
         return f
@@ -125,6 +175,16 @@ class PdfUnlocker(private val context: Context) {
                 source.inputStream().use { it.copyTo(out) }
             } ?: throw IOException("Cannot open output stream")
             return uri.toString()
+        }
+    }
+
+    private class SafePdfDocument(reader: PdfReader, writer: PdfWriter) : PdfDocument(reader, writer) {
+        override fun updateXmpMetadata() {
+            try {
+                super.updateXmpMetadata()
+            } catch (t: Throwable) {
+                Log.w("SafePdfDocument", "Skipping XMP metadata update due to parser incompatibility: ${t.message}")
+            }
         }
     }
 }

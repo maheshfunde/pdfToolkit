@@ -41,3 +41,25 @@ build_tablet_screenshots.py
 build_playstore_store_listing_assets.py
 package_play_store_release.py
 playstore_cli_deploy.py
+
+# --- AI tooling working directories ---
+.claude/
+.cursor/
+.agents/
+
+# --- Goldie store asset pipeline ---
+goldie.config.ts
+goldie/
+
+# --- One-off capture/build scripts (not part of the app) ---
+capture_all_screens_direct.py
+capture_all_tablet_screens.py
+capture_screens.py
+build_playstore_screenshots.py
+build_tablet_screenshots.py
+build_playstore_store_listing_assets.py
+package_play_store_release.py
+playstore_cli_deploy.py
+
+# --- Docs generated locally ---
+docs/

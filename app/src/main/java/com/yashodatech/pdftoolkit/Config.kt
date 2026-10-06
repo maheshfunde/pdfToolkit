@@ -7,7 +7,7 @@ import androidx.compose.runtime.setValue
 object Config {
     const val PACKAGE_NAME = "com.yashodatech.pdftoolkit"
     const val APP_NAME = "PDF Toolkit – PDF Editor, Merge, Compress, Split"
-    const val APP_VERSION = "1.5"
+    const val APP_VERSION = "1.8"
 
     // Email
     const val DEVELOPER_EMAIL = "fundemahesh@gmail.com"

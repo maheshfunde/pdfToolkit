@@ -7,54 +7,50 @@ import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.LockOpen
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.yashodatech.pdftoolkit.components.LiquidGlassCard
-import com.yashodatech.pdftoolkit.components.LiquidHeader
-import com.yashodatech.pdftoolkit.components.LiquidPrimaryButton
-import com.yashodatech.pdftoolkit.components.PrecisionFileSelectCard
-import com.yashodatech.pdftoolkit.components.ModernGlassLoader
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.itextpdf.kernel.exceptions.BadPasswordException
+import com.yashodatech.pdftoolkit.components.*
 import com.yashodatech.pdftoolkit.data.PreferencesManager
 import com.yashodatech.pdftoolkit.data.RecentDoc
 import com.yashodatech.pdftoolkit.pdf.PdfUnlocker
 import com.yashodatech.pdftoolkit.theme.*
-import com.google.android.gms.ads.*
-import com.google.android.gms.ads.interstitial.InterstitialAd
-import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
-import com.itextpdf.kernel.exceptions.BadPasswordException
 import kotlinx.coroutines.launch
 
 private fun formatUnlockBytes(bytes: Long): String = when {
     bytes < 1024 -> "$bytes B"
     bytes < 1024 * 1024 -> "${bytes / 1024} KB"
-    else -> String.format("%.1f MB", bytes / (1024.0 * 1024.0))
+    else -> String.format(java.util.Locale.US, "%.1f MB", bytes / (1024.0 * 1024.0))
 }
 
-// ═══════════════════════════════════════════════════════════
-//  Unlock / remove password — drop protection from a PDF you own
-// ═══════════════════════════════════════════════════════════
 @Composable
-fun UnlockPdfScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}) {
+fun UnlockPdfScreen(
+    onBack: () -> Unit,
+    onOpenDocument: (String) -> Unit = {}
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -105,7 +101,7 @@ fun UnlockPdfScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}) {
                 val nameIdx = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                 val sizeIdx = c.getColumnIndex(OpenableColumns.SIZE)
                 if (c.moveToFirst()) {
-                    if (nameIdx >= 0) sourceName = c.getString(nameIdx) ?: "Unknown.pdf"
+                    if (nameIdx >= 0) sourceName = c.getString(nameIdx) ?: "document.pdf"
                     if (sizeIdx >= 0) sourceSize = formatUnlockBytes(c.getLong(sizeIdx))
                 }
             }
@@ -132,9 +128,10 @@ fun UnlockPdfScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}) {
                 )
                 resultUri = Uri.parse(outUri)
                 val prefs = PreferencesManager(context)
+                val outName = "${sourceName.removeSuffix(".pdf")}_unlocked.pdf"
                 prefs.addRecentDoc(
                     RecentDoc(
-                        name = sourceName.removeSuffix(".pdf") + "_unlocked.pdf",
+                        name = outName,
                         uri = outUri,
                         tool = "Unlock",
                         timestamp = System.currentTimeMillis()
@@ -142,9 +139,10 @@ fun UnlockPdfScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}) {
                 )
                 showSuccess = true
                 if (Config.SHOW_ADS) interstitialAd?.show(context as Activity)
-            } catch (e: BadPasswordException) {
-                passwordError = "Incorrect password — try again."
+            } catch (_: BadPasswordException) {
+                passwordError = "Incorrect password — please verify and try again."
             } catch (e: Exception) {
+                android.util.Log.e("PDFToolkit", "Unlock failed", e)
                 Toast.makeText(
                     context,
                     "Unlock failed: ${e.localizedMessage ?: "unknown error"}",
@@ -167,258 +165,209 @@ fun UnlockPdfScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}) {
         showSuccess = false
     }
 
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Column(modifier = Modifier.fillMaxSize().systemBarsPadding()) {
-            LiquidHeader(
-                title = "Unlock PDF",
-                subtitle = "Remove a password you own",
-                icon = Icons.Rounded.LockOpen,
-                gradientColors = GradientUnlockVibrant,
-                onBackClick = onBack,
-                statusBadge = "Access"
-            )
-
-            if (isUnlocking) {
-                ModernGlassLoader(
-                    isShowing = true,
-                    title = "Removing lock...",
-                    statusText = "Saving an unlocked copy"
+    AdaptiveToolScaffold(
+        title = "Unlock PDF",
+        subtitle = "Remove encryption or restrictions from a PDF you own",
+        icon = Icons.Rounded.LockOpen,
+        accentColor = ToolSecurityAccent,
+        onBack = onBack,
+        previewPane = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                ModernFilePickerCard(
+                    selectedFileUri = sourceUri,
+                    fileName = sourceName,
+                    fileSize = sourceSize,
+                    accentColor = ToolSecurityAccent,
+                    onPick = { launcher.launch(arrayOf("application/pdf")) },
+                    onClear = { resetForNew() },
+                    emptyPrompt = "Select Protected PDF",
+                    emptySubtext = "Supports password-protected documents"
                 )
-            }
 
-            if (showSuccess && resultUri != null) {
-                UnlockSuccess(
-                    displayName = sourceName.removeSuffix(".pdf").substringBeforeLast(".")
-                        .ifBlank { "document" } + "_unlocked.pdf",
-                    onView = { onOpenDocument(resultUri.toString()) },
-                    onExportAnother = { resetForNew() },
-                    onBack = onBack
-                )
-            } else {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp)
-                ) {
-                    Spacer(Modifier.height(16.dp))
-
-                    PrecisionFileSelectCard(
-                        title = if (sourceUri != null) "Change PDF File" else "Select Protected PDF",
-                        subtitle = "Tap to choose a .pdf file",
-                        chipLabel = ".PDF",
-                        gradient = GradientUnlockVibrant,
-                        icon = Icons.Rounded.FileOpen,
-                        onClick = { launcher.launch(arrayOf("application/pdf")) }
-                    )
-
-                    if (sourceUri != null) {
-                        Spacer(Modifier.height(16.dp))
-
-                        if (isLoading) {
-                            Box(Modifier.fillMaxWidth().height(160.dp), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(color = Vermilion, modifier = Modifier.size(44.dp))
-                            }
-                        } else {
-                            // ── File info + lock status ──
-                            LiquidGlassCard {
-                                Column {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Column(Modifier.weight(1f)) {
-                                            Text(sourceName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = InkBone(), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                            Text("$sourceSize", fontSize = 11.sp, color = InkMuted())
-                                        }
-                                        LockStatusBadge(lockState)
-                                    }
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = ToolSecurityAccent,
+                            strokeWidth = 3.dp,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                } else if (lockState != null) {
+                    when (lockState) {
+                        PdfUnlocker.LockState.NOT_PROTECTED -> {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                color = ToolConvertAccent.copy(alpha = 0.08f),
+                                border = BorderStroke(1.dp, ToolConvertAccent.copy(alpha = 0.25f))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.LockOpen,
+                                        contentDescription = null,
+                                        tint = ToolConvertAccent,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = "This document is already unprotected. No password needed.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
                                 }
                             }
-
-                            // ── Password field, only when one is required ──
-                            if (lockState == PdfUnlocker.LockState.USER_PASSWORD) {
-                                Spacer(Modifier.height(16.dp))
-                                PasswordField(
-                                    password = password,
-                                    visible = passwordVisible,
-                                    error = passwordError,
-                                    onPasswordChange = {
-                                        password = it
-                                        passwordError = null
-                                    },
-                                    onToggleVisible = { passwordVisible = !passwordVisible }
-                                )
-                            }
-
-                            Spacer(Modifier.height(8.dp))
-                            // ── What happens ──
-                            UnlockHint(lockState)
-
-                            Spacer(Modifier.height(20.dp))
-
-                            LiquidPrimaryButton(
-                                text = if (lockState == PdfUnlocker.LockState.USER_PASSWORD) "Unlock & Save"
-                                else "Save Unlocked Copy",
-                                onClick = { runUnlock() },
-                                enabled = sourceUri != null && !isUnlocking &&
-                                    (lockState != PdfUnlocker.LockState.USER_PASSWORD || password.isNotBlank())
-                            )
-                            Spacer(Modifier.height(24.dp))
                         }
-                    } else {
-                        Spacer(Modifier.height(120.dp))
-                        UnlockEmptyState()
+                        PdfUnlocker.LockState.PERMISSIONS_ONLY -> {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                color = ToolOrganizeAccent.copy(alpha = 0.08f),
+                                border = BorderStroke(1.dp, ToolOrganizeAccent.copy(alpha = 0.25f))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.LockOpen,
+                                        contentDescription = null,
+                                        tint = ToolOrganizeAccent,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = "Document has owner permissions restrictions only. Can be unlocked without password.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                        }
+                        else -> {}
                     }
                 }
             }
-        }
-    }
-}
+        },
+        controlsPane = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                if (lockState == PdfUnlocker.LockState.USER_PASSWORD) {
+                    ModernActionCard(
+                        title = "Document Password",
+                        accentColor = ToolSecurityAccent
+                    ) {
+                        Text(
+                            text = "Enter the current document password to generate an unlocked copy:",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
 
-@Composable
-private fun LockStatusBadge(lockState: PdfUnlocker.LockState?) {
-    val (label, tint) = when (lockState) {
-        PdfUnlocker.LockState.NOT_PROTECTED -> "Not protected" to InkMuted()
-        PdfUnlocker.LockState.PERMISSIONS_ONLY -> "Restricted copy/print" to WarningAmber
-        PdfUnlocker.LockState.USER_PASSWORD -> "Password protected" to Vermilion
-        null -> "Checking…" to InkFaint()
-    }
-    Text(
-        label,
-        fontSize = 11.sp,
-        fontWeight = FontWeight.SemiBold,
-        color = tint,
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(tint.copy(alpha = 0.12f))
-            .padding(horizontal = 10.dp, vertical = 4.dp)
-    )
-}
+                        Spacer(modifier = Modifier.height(12.dp))
 
-@Composable
-private fun PasswordField(
-    password: String,
-    visible: Boolean,
-    error: String?,
-    onPasswordChange: (String) -> Unit,
-    onToggleVisible: () -> Unit
-) {
-    Column {
-        Text(
-            if (error != null) "Password" else "Enter the PDF password",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = error?.let { ErrorRed } ?: InkMuted()
-        )
-        Spacer(Modifier.height(6.dp))
-        OutlinedTextField(
-            value = password,
-            onValueChange = onPasswordChange,
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            isError = error != null,
-            textStyle = LocalTextStyle.current.copy(fontSize = 15.sp, color = InkBone()),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Vermilion,
-                unfocusedBorderColor = InkBorder,
-                errorBorderColor = ErrorRed,
-                focusedTextColor = InkBone(),
-                unfocusedTextColor = InkBone(),
-                cursorColor = Vermilion,
-                focusedContainerColor = InkSurface,
-                unfocusedContainerColor = InkSurface
-            ),
-            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                keyboardType = androidx.compose.ui.text.input.KeyboardType.Password
-            ),
-            visualTransformation = if (visible) VisualTransformation.None
-            else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = onToggleVisible) {
-                    Icon(
-                        if (visible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                        contentDescription = if (visible) "Hide password" else "Show password",
-                        tint = InkMuted()
-                    )
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = {
+                                password = it
+                                passwordError = null
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Password") },
+                            singleLine = true,
+                            isError = passwordError != null,
+                            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                    Icon(
+                                        imageVector = if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                        contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                                    )
+                                }
+                            },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = { runUnlock() }),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        if (passwordError != null) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = passwordError!!,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
                 }
             }
-        )
-        if (error != null) {
-            Spacer(Modifier.height(4.dp))
-            Text(error, fontSize = 12.sp, color = ErrorRed)
-        }
-    }
-}
+        },
+        bottomBar = {
+            val canUnlock = sourceUri != null && !isLoading && !isUnlocking &&
+                    (lockState == PdfUnlocker.LockState.PERMISSIONS_ONLY ||
+                            (lockState == PdfUnlocker.LockState.USER_PASSWORD && password.isNotBlank()) ||
+                            lockState == PdfUnlocker.LockState.NOT_PROTECTED)
 
-@Composable
-private fun UnlockHint(lockState: PdfUnlocker.LockState?) {
-    LiquidGlassCard {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Rounded.Info, null, tint = Vermilion, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("What happens", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = InkBone())
-        }
-        Spacer(Modifier.height(6.dp))
-        Text(
-            when (lockState) {
-                PdfUnlocker.LockState.NOT_PROTECTED ->
-                    "This PDF has no password — you can still save an unlocked copy if you like."
-                PdfUnlocker.LockState.PERMISSIONS_ONLY ->
-                    "Editing, copying and printing are restricted. Unlock to remove those limits."
-                PdfUnlocker.LockState.USER_PASSWORD ->
-                    "You'll need the password you set. The unlocked copy opens freely with no restictions."
-                null -> ""
-            },
-            fontSize = 12.sp, lineHeight = 17.sp, color = InkMuted()
-        )
-    }
-}
-
-@Composable
-private fun UnlockEmptyState() {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-        Box(Modifier.size(100.dp).clip(CircleShape).background(Vermilion.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-            Icon(Icons.Rounded.LockOpen, null, tint = Vermilion.copy(alpha = 0.5f), modifier = Modifier.size(46.dp))
-        }
-        Spacer(Modifier.height(20.dp))
-        Text("No PDF selected", fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = InkMuted())
-        Spacer(Modifier.height(8.dp))
-        Text("Pick a password-protected PDF to unlock it", fontSize = 13.sp, color = InkFaint(), textAlign = TextAlign.Center)
-    }
-}
-
-@Composable
-private fun UnlockSuccess(
-    displayName: String,
-    onView: () -> Unit,
-    onExportAnother: () -> Unit,
-    onBack: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Spacer(Modifier.weight(0.25f))
-        Box(Modifier.size(110.dp).clip(CircleShape).background(Vermilion.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-            Box(Modifier.size(74.dp).clip(CircleShape).background(Vermilion), contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.LockOpen, null, tint = InkBone(), modifier = Modifier.size(38.dp))
+            ModernStickyBottomBar {
+                ModernPrimaryButton(
+                    text = "Unlock & Save PDF",
+                    icon = Icons.Rounded.LockOpen,
+                    accentColor = ToolSecurityAccent,
+                    enabled = canUnlock,
+                    isLoading = isUnlocking,
+                    onClick = { runUnlock() }
+                )
             }
         }
-        Spacer(Modifier.height(24.dp))
-        Text("Unlocked!", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = InkBone())
-        Spacer(Modifier.height(8.dp))
-        Text("Saved as $displayName", fontSize = 13.sp, color = InkMuted(), textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis)
-        Spacer(Modifier.height(8.dp))
-        Text("to Downloads — it now opens without a password", fontSize = 12.sp, color = InkFaint())
-        Spacer(Modifier.height(28.dp))
+    )
 
-        LiquidPrimaryButton(text = "Open Document", onClick = onView)
+    ModernGlassLoader(
+        isShowing = isUnlocking,
+        title = "Removing Lock...",
+        subtitle = "Generating unlocked PDF document",
+        accentColor = ToolSecurityAccent
+    )
 
-        Spacer(Modifier.weight(0.25f))
-
-        LiquidPrimaryButton(text = "Unlock Another PDF", onClick = onExportAnother)
-        Spacer(Modifier.height(12.dp))
-        TextButton(onClick = onBack) {
-            Text("Back to Home", color = InkMuted())
-        }
+    if (showSuccess && resultUri != null) {
+        val outName = "${sourceName.removeSuffix(".pdf")}_unlocked.pdf"
+        ModernSuccessSheet(
+            fileName = outName,
+            onOpen = {
+                try {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(resultUri, "application/pdf")
+                            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        }
+                    )
+                } catch (_: Exception) {
+                    Toast.makeText(context, "No app found to open PDF", Toast.LENGTH_SHORT).show()
+                }
+            },
+            onShare = {
+                context.startActivity(
+                    Intent.createChooser(
+                        Intent(Intent.ACTION_SEND).apply {
+                            type = "application/pdf"
+                            putExtra(Intent.EXTRA_STREAM, resultUri)
+                            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        },
+                        "Share Unlocked PDF"
+                    )
+                )
+            },
+            onDone = { resetForNew() }
+        )
     }
 }

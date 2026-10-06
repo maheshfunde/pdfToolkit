@@ -16,11 +16,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.CallSplit
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -83,7 +83,7 @@ private fun formatSplitSize(bytes: Long): String {
 // ═══════════════════════════════════════════════════════════
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SplitPdfScreen(onBack: () -> Unit) {
+fun SplitPdfScreen(onBack: () -> Unit, initialUri: Uri? = null) {
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -110,6 +110,39 @@ fun SplitPdfScreen(onBack: () -> Unit) {
     // Success screen state
     var showSuccessScreen by remember { mutableStateOf(false) }
 
+    fun loadPdf(uri: Uri) {
+        sourceUri = uri
+        savedUris = emptyList()
+        splitRanges.clear()
+        showSuccessScreen = false
+
+        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val nameIdx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            val sizeIdx = cursor.getColumnIndex(OpenableColumns.SIZE)
+            if (cursor.moveToFirst()) {
+                if (nameIdx >= 0) sourceName = cursor.getString(nameIdx) ?: "Unknown.pdf"
+                if (sizeIdx >= 0) sourceSize = formatSplitSize(cursor.getLong(sizeIdx))
+            }
+        }
+        if (sourceName.isBlank()) {
+            sourceName = uri.lastPathSegment ?: "document.pdf"
+        }
+
+        isLoadingInfo = true
+        scope.launch {
+            totalPages = withContext(Dispatchers.IO) {
+                PdfSplitter().getPageCount(context, uri)
+            }
+            isLoadingInfo = false
+        }
+    }
+
+    val activeUri = initialUri
+
+    LaunchedEffect(activeUri) {
+        activeUri?.let { loadPdf(it) }
+    }
+
     // ── Load interstitial ad ────────────────────────
     LaunchedEffect(Unit) {
         if (Config.SHOW_ADS) {
@@ -131,31 +164,12 @@ fun SplitPdfScreen(onBack: () -> Unit) {
         ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let {
-            context.contentResolver.takePersistableUriPermission(
-                it, Intent.FLAG_GRANT_READ_URI_PERMISSION
-            )
-
-            sourceUri = it
-            savedUris = emptyList()
-            splitRanges.clear()
-            showSuccessScreen = false
-
-            context.contentResolver.query(it, null, null, null, null)?.use { cursor ->
-                val nameIdx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                val sizeIdx = cursor.getColumnIndex(OpenableColumns.SIZE)
-                if (cursor.moveToFirst()) {
-                    if (nameIdx >= 0) sourceName = cursor.getString(nameIdx) ?: "Unknown.pdf"
-                    if (sizeIdx >= 0) sourceSize = formatSplitSize(cursor.getLong(sizeIdx))
-                }
-            }
-
-            isLoadingInfo = true
-            scope.launch {
-                totalPages = withContext(Dispatchers.IO) {
-                    PdfSplitter().getPageCount(context, it)
-                }
-                isLoadingInfo = false
-            }
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    it, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: Exception) {}
+            loadPdf(it)
         }
     }
 
@@ -274,6 +288,7 @@ fun SplitPdfScreen(onBack: () -> Unit) {
                 Column(
                     modifier = Modifier
                         .weight(1f)
+                        .verticalScroll(rememberScrollState())
                         .padding(horizontal = 16.dp)
                 ) {
 
@@ -290,7 +305,9 @@ fun SplitPdfScreen(onBack: () -> Unit) {
                         SplitEmptyState()
                     } else if (isLoadingInfo) {
                         Box(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(260.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator(color = AccentSplit, modifier = Modifier.size(48.dp))
@@ -348,12 +365,21 @@ fun SplitPdfScreen(onBack: () -> Unit) {
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text("Page Ranges", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                                    TextButton(onClick = { showAddRangeDialog = true }) {
+                                    FilledTonalButton(
+                                        onClick = { showAddRangeDialog = true },
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = ButtonDefaults.filledTonalButtonColors(
+                                            containerColor = AccentSplit.copy(alpha = 0.12f),
+                                            contentColor = AccentSplit
+                                        )
+                                    ) {
                                         Icon(Icons.Rounded.Add, null, modifier = Modifier.size(18.dp))
                                         Spacer(Modifier.width(4.dp))
-                                        Text("Add Range")
+                                        Text("Add Range", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                                     }
                                 }
+
+                                Spacer(Modifier.height(8.dp))
 
                                 if (splitRanges.isEmpty()) {
                                     Surface(
@@ -361,7 +387,7 @@ fun SplitPdfScreen(onBack: () -> Unit) {
                                         shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(vertical = 8.dp)
+                                            .clickable { showAddRangeDialog = true }
                                     ) {
                                         Column(
                                             modifier = Modifier.padding(20.dp),
@@ -369,30 +395,30 @@ fun SplitPdfScreen(onBack: () -> Unit) {
                                         ) {
                                             Icon(
                                                 Icons.Outlined.ContentCut, null,
-                                                tint = AccentSplit.copy(alpha = 0.4f),
+                                                tint = AccentSplit.copy(alpha = 0.5f),
                                                 modifier = Modifier.size(32.dp)
                                             )
                                             Spacer(Modifier.height(8.dp))
                                             Text(
                                                 "No ranges added yet",
                                                 fontSize = 14.sp,
-                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                                fontWeight = FontWeight.Medium,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                                             )
                                             Spacer(Modifier.height(4.dp))
                                             Text(
-                                                "Tap \"Add Range\" to define page ranges",
+                                                "Tap here or \"Add Range\" to define pages",
                                                 fontSize = 12.sp,
-                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+                                                color = AccentSplit
                                             )
                                         }
                                     }
                                 } else {
-                                    LazyColumn(
-                                        modifier = Modifier.weight(1f),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                                        contentPadding = PaddingValues(vertical = 4.dp)
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        itemsIndexed(splitRanges) { index, range ->
+                                        splitRanges.forEachIndexed { index, range ->
                                             SplitRangeCard(
                                                 range = range,
                                                 index = index,
@@ -403,6 +429,8 @@ fun SplitPdfScreen(onBack: () -> Unit) {
                                 }
                             }
                         }
+
+                        Spacer(Modifier.height(24.dp))
                     }
                 }
 
@@ -858,17 +886,24 @@ private fun SplitRangeCard(range: SplitRangeState, index: Int, onRemove: () -> U
 // ═══════════════════════════════════════════════════════════
 @Composable
 private fun SplitBottomArea(onSplitClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 4.dp,
+        shadowElevation = 8.dp
     ) {
-        PrecisionGradientButton(
-            text = "Split PDF",
-            onClick = onSplitClick,
-            gradient = GradientSplit,
-            icon = Icons.Rounded.ContentCut
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            PrecisionGradientButton(
+                text = "Split PDF",
+                onClick = onSplitClick,
+                gradient = GradientSplit,
+                icon = Icons.Rounded.ContentCut
+            )
+        }
     }
 }
 
@@ -929,9 +964,7 @@ private fun AddRangeDialog(totalPages: Int, onDismiss: () -> Unit, onAdd: (Int, 
                         onValueChange = { fromText = it },
                         label = { Text("From") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(56.dp),
+                        modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true
                     )
@@ -940,9 +973,7 @@ private fun AddRangeDialog(totalPages: Int, onDismiss: () -> Unit, onAdd: (Int, 
                         onValueChange = { toText = it },
                         label = { Text("To") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(56.dp),
+                        modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true
                     )

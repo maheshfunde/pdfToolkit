@@ -30,8 +30,8 @@ android {
         applicationId = "com.yashodatech.pdftoolkit"
         minSdk = 24
         targetSdk = 36
-        versionCode = 11
-        versionName = "1.7"
+        versionCode = 16
+        versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

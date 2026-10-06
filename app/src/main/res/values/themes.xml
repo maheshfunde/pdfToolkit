@@ -10,7 +10,8 @@
 
     <!-- Splash Theme -->
     <style name="Theme.PDFToolkit.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#252525</item>
+        <item name="windowSplashScreenBackground">#FFFFFF</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
         <item name="postSplashScreenTheme">@style/Theme.PDFToolkit</item>
     </style>
 

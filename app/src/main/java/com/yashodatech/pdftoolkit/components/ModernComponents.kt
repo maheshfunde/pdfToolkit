@@ -1,10 +1,13 @@
 package com.yashodatech.pdftoolkit.components
 
+import android.graphics.Bitmap
+import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,14 +22,17 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -36,6 +42,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.yashodatech.pdftoolkit.theme.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 // ═══════════════════════════════════════════════════════════
 //  STANDARDIZED MODERN COMPONENT LIBRARY
@@ -188,6 +196,32 @@ fun ModernFilePickerCard(
     emptySubtext: String = "Supports PDF documents up to 100MB"
 ) {
     val hasSelection = selectedFileUri != null || (isMultiFile && multiFileCount > 0) || !fileName.isNullOrBlank()
+    val context = LocalContext.current
+    var thumbnailBitmap by remember(selectedFileUri) { mutableStateOf<Bitmap?>(null) }
+
+    LaunchedEffect(selectedFileUri) {
+        if (selectedFileUri != null && !isMultiFile) {
+            withContext(Dispatchers.IO) {
+                try {
+                    context.contentResolver.openFileDescriptor(selectedFileUri, "r")?.use { pfd ->
+                        PdfRenderer(pfd).use { renderer ->
+                            if (renderer.pageCount > 0) {
+                                renderer.openPage(0).use { page ->
+                                    val bmp = Bitmap.createBitmap(160, 220, Bitmap.Config.ARGB_8888)
+                                    page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                                    thumbnailBitmap = bmp
+                                }
+                            }
+                        }
+                    }
+                } catch (_: Exception) {
+                    thumbnailBitmap = null
+                }
+            }
+        } else {
+            thumbnailBitmap = null
+        }
+    }
 
     if (!hasSelection) {
         // Empty State: Clean neutral card with subtle outline
@@ -265,7 +299,7 @@ fun ModernFilePickerCard(
             }
         }
     } else {
-        // Selected State: Solid neutral card with metadata chips & replace action
+        // Selected State: Solid neutral card with metadata chips & thumbnail preview
         Surface(
             modifier = modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -275,22 +309,39 @@ fun ModernFilePickerCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(46.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(accentColor.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (isMultiFile) Icons.Outlined.CollectionsBookmark else Icons.Outlined.PictureAsPdf,
-                        contentDescription = null,
-                        tint = accentColor,
-                        modifier = Modifier.size(24.dp)
-                    )
+                if (thumbnailBitmap != null) {
+                    Surface(
+                        modifier = Modifier
+                            .size(width = 44.dp, height = 58.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                    ) {
+                        Image(
+                            bitmap = thumbnailBitmap!!.asImageBitmap(),
+                            contentDescription = "PDF Preview",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(accentColor.copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (isMultiFile) Icons.Outlined.CollectionsBookmark else Icons.Outlined.PictureAsPdf,
+                            contentDescription = null,
+                            tint = accentColor,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(14.dp))
@@ -347,13 +398,13 @@ fun ModernFilePickerCard(
                         Spacer(modifier = Modifier.width(4.dp))
                         IconButton(
                             onClick = onClear,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(40.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Close,
                                 contentDescription = "Clear file",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
@@ -383,7 +434,9 @@ fun ModernBadge(
             modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
             color = textColor,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
+            softWrap = false,
+            maxLines = 1
         )
     }
 }
@@ -960,5 +1013,168 @@ fun AdaptiveToolScaffold(
                 }
             }
         }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PRIMARY 5-DESTINATION BOTTOM NAVIGATION
+//  Home | Tools | SCAN (Elevated Indigo) | Recent | Settings
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Primary 5-destination bottom navigation bar with prominent center Scan action.
+ * Destinations: Home | Tools | SCAN (Center, Elevated, Indigo) | Recent | Settings
+ * Follows the restrained dark visual system:
+ * - Background: #16181C (DarkPrimarySurface)
+ * - Top Border: #2B2F36 (DarkBorder)
+ * - Scan Button: #6D7CFF (PrimaryIndigo)
+ * - Selected Item: #6D7CFF
+ * - Unselected Item: #737780 (DarkTextMuted)
+ */
+@Composable
+fun PrimaryBottomNavigation(
+    selectedRoute: String = "home",
+    onHomeClick: () -> Unit,
+    onToolsClick: () -> Unit,
+    onScanClick: () -> Unit,
+    onRecentClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val primaryColor = MaterialTheme.colorScheme.primary
+
+    Box(
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surfaceContainerLowest,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            tonalElevation = 2.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 6.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 1. Home
+                BottomNavTab(
+                    title = "Home",
+                    icon = Icons.Outlined.Home,
+                    selected = selectedRoute == "home",
+                    onClick = onHomeClick,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // 2. Tools
+                BottomNavTab(
+                    title = "Tools",
+                    icon = Icons.Outlined.GridView,
+                    selected = selectedRoute == "tools",
+                    onClick = onToolsClick,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Center gap to let the docked cutout breathe
+                Spacer(modifier = Modifier.weight(1.2f))
+
+                // 4. Recent
+                BottomNavTab(
+                    title = "Recent",
+                    icon = Icons.Outlined.AccessTime,
+                    selected = selectedRoute == "recent",
+                    onClick = onRecentClick,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // 5. Settings
+                BottomNavTab(
+                    title = "Settings",
+                    icon = Icons.Outlined.Settings,
+                    selected = selectedRoute == "settings",
+                    onClick = onSettingsClick,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        // Center SCAN PDF Button docked in circular cutout cradle
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .navigationBarsPadding()
+                .padding(bottom = 6.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(62.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+                    .border(2.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                    .padding(4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .clickable(onClick = onScanClick),
+                    shape = CircleShape,
+                    color = primaryColor,
+                    shadowElevation = 6.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Rounded.DocumentScanner,
+                            contentDescription = "Scan PDF",
+                            tint = Color.White,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BottomNavTab(
+    title: String,
+    icon: ImageVector,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val activeColor = MaterialTheme.colorScheme.primary
+    val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
+    val tint = if (selected) activeColor else inactiveColor
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = title,
+            tint = tint,
+            modifier = Modifier.size(22.dp)
+        )
+        Spacer(modifier = Modifier.height(3.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+            color = tint,
+            fontSize = 11.sp,
+            maxLines = 1
+        )
     }
 }

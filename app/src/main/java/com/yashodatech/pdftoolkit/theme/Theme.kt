@@ -17,12 +17,12 @@ import androidx.core.view.WindowCompat
 // ════════════════════════════════════════════════════════════════════════════════
 
 private val LightColorScheme = lightColorScheme(
-    primary = PrecisionPrimary,
-    onPrimary = PrecisionOnPrimary,
-    primaryContainer = PrecisionPrimaryContainer,
-    onPrimaryContainer = PrecisionOnPrimaryContainer,
-    inversePrimary = PrecisionInversePrimary,
-    surfaceTint = PrecisionPrimaryTint,
+    primary = LightAccentRed,
+    onPrimary = Color.White,
+    primaryContainer = LightAccentRedTint,
+    onPrimaryContainer = LightAccentRed,
+    inversePrimary = LightAccentRed,
+    surfaceTint = LightAccentRed,
 
     secondary = PrecisionSecondary,
     onSecondary = PrecisionOnSecondary,
@@ -67,48 +67,48 @@ private val LightColorScheme = lightColorScheme(
 // dark-mode adaptation note. Primary/secondary/tertiary keep their light hues so
 // CTAs stay instantly recognizable.
 private val DarkColorScheme = darkColorScheme(
-    primary = PrecisionPrimary,
-    onPrimary = PrecisionOnPrimary,
-    primaryContainer = PrecisionPrimaryContainer,
-    onPrimaryContainer = PrecisionOnPrimaryContainer,
-    inversePrimary = PrecisionInversePrimary,
-    surfaceTint = PrecisionPrimaryTint,
+    primary = PrimaryIndigo,
+    onPrimary = Color.White,
+    primaryContainer = DarkHighlightSurface,
+    onPrimaryContainer = DarkTextPrimary,
+    inversePrimary = PrimaryIndigo,
+    surfaceTint = PrimaryIndigo,
 
-    secondary = Color(0xFFBEC6E0),
-    onSecondary = Color(0xFF131B2E),
-    secondaryContainer = Color(0xFF3F465C),
-    onSecondaryContainer = Color(0xFFDAE2FD),
+    secondary = DarkTextSecondary,
+    onSecondary = DarkBackground,
+    secondaryContainer = DarkElevatedSurface,
+    onSecondaryContainer = DarkTextPrimary,
 
-    tertiary = Color(0xFFC3C0FF),
-    onTertiary = Color(0xFF0F0069),
-    tertiaryContainer = Color(0xFF3323CC),
-    onTertiaryContainer = Color(0xFFE2DFFF),
+    tertiary = DarkTextSecondary,
+    onTertiary = DarkBackground,
+    tertiaryContainer = DarkHighlightSurface,
+    onTertiaryContainer = DarkTextPrimary,
 
-    background = NeutralCanvasDark,            // deep charcoal neutral canvas
-    onBackground = NeutralTextPrimaryDark,
-    surface = NeutralCanvasDark,
-    onSurface = NeutralTextPrimaryDark,
-    surfaceVariant = Color(0xFF26282E),
-    onSurfaceVariant = NeutralTextSecondaryDark,
+    background = DarkBackground,               // #0D0E10
+    onBackground = DarkTextPrimary,            // #F9FAFB
+    surface = DarkBackground,
+    onSurface = DarkTextPrimary,
+    surfaceVariant = DarkElevatedSurface,      // #1D2025
+    onSurfaceVariant = DarkTextSecondary,      // #E5E7EB (dark white)
 
-    surfaceDim = Color(0xFF0B0C0E),
-    surfaceBright = Color(0xFF2C2F36),
-    surfaceContainerLowest = NeutralCardDark,  // cards — crisp dark charcoal
-    surfaceContainerLow = Color(0xFF16181B),
-    surfaceContainer = Color(0xFF202327),
-    surfaceContainerHigh = Color(0xFF282B31),    // tab strip / segmented control
-    surfaceContainerHighest = Color(0xFF32363D),
+    surfaceDim = DarkBackground,
+    surfaceBright = DarkHighlightSurface,
+    surfaceContainerLowest = DarkPrimarySurface, // #16181C (cards)
+    surfaceContainerLow = DarkElevatedSurface,    // #1D2025
+    surfaceContainer = DarkHighlightSurface,      // #24272D
+    surfaceContainerHigh = DarkHighlightSurface,  // #24272D
+    surfaceContainerHighest = DarkBorder,         // #2B2F36
 
-    inverseSurface = NeutralTextPrimaryDark,
-    inverseOnSurface = NeutralCanvasDark,
+    inverseSurface = DarkTextPrimary,
+    inverseOnSurface = DarkBackground,
 
-    outline = Color(0xFF6B7280),
-    outlineVariant = NeutralCardBorderDark,
+    outline = DarkTextMuted,                      // #A1A1AA
+    outlineVariant = DarkBorder,                  // #2B2F36
 
-    error = Color(0xFFFFB4AC),
-    onError = Color(0xFF410002),
-    errorContainer = Color(0xFF93000A),
-    onErrorContainer = Color(0xFFFFDAD6),
+    error = SemanticDanger,                       // #F87171
+    onError = Color.White,
+    errorContainer = Color(0xFF451A1A),
+    onErrorContainer = SemanticDanger,
 
     scrim = Color.Black.copy(alpha = 0.5f)
 )

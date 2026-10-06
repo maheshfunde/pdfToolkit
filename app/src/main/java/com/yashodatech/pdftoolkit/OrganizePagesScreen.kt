@@ -65,7 +65,11 @@ private fun formatBytes(bytes: Long): String = when {
 //  duplicate / extract, then save the result as a new PDF.
 // ═══════════════════════════════════════════════════════════
 @Composable
-fun OrganizePagesScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {}) {
+fun OrganizePagesScreen(
+    onBack: () -> Unit,
+    onOpenDocument: (String) -> Unit = {},
+    initialUri: Uri? = null
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -86,6 +90,40 @@ fun OrganizePagesScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {
     val selected = remember { mutableStateListOf<Int>() }
     var interstitialAd by remember { mutableStateOf<InterstitialAd?>(null) }
 
+    fun loadPdf(uri: Uri) {
+        sourceUri = uri
+        savedUri = null
+        showSuccess = false
+        selected.clear()
+
+        context.contentResolver.query(uri, null, null, null, null)?.use { c ->
+            val nameIdx = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            val sizeIdx = c.getColumnIndex(OpenableColumns.SIZE)
+            if (c.moveToFirst()) {
+                if (nameIdx >= 0) sourceName = c.getString(nameIdx) ?: "Unknown.pdf"
+                if (sizeIdx >= 0) sourceSize = formatBytes(c.getLong(sizeIdx))
+            }
+        }
+        if (sourceName.isBlank()) {
+            sourceName = uri.lastPathSegment ?: "document.pdf"
+        }
+
+        isLoading = true
+        scope.launch {
+            totalPages = withContext(Dispatchers.IO) {
+                pageManager.load(uri).also { count ->
+                    pages.clear()
+                    for (i in 1..count) pages.add(PageInfo(sourcePage = i))
+                }
+            }
+            isLoading = false
+        }
+    }
+
+    LaunchedEffect(initialUri) {
+        initialUri?.let { loadPdf(it) }
+    }
+
     LaunchedEffect(Unit) {
         if (Config.SHOW_ADS) {
             InterstitialAd.load(
@@ -103,33 +141,12 @@ fun OrganizePagesScreen(onBack: () -> Unit, onOpenDocument: (String) -> Unit = {
         ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let {
-            context.contentResolver.takePersistableUriPermission(
-                it, Intent.FLAG_GRANT_READ_URI_PERMISSION
-            )
-            sourceUri = it
-            savedUri = null
-            showSuccess = false
-            selected.clear()
-
-            context.contentResolver.query(it, null, null, null, null)?.use { c ->
-                val nameIdx = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                val sizeIdx = c.getColumnIndex(OpenableColumns.SIZE)
-                if (c.moveToFirst()) {
-                    if (nameIdx >= 0) sourceName = c.getString(nameIdx) ?: "Unknown.pdf"
-                    if (sizeIdx >= 0) sourceSize = formatBytes(c.getLong(sizeIdx))
-                }
-            }
-
-            isLoading = true
-            scope.launch {
-                totalPages = withContext(Dispatchers.IO) {
-                    pageManager.load(it).also { count ->
-                        pages.clear()
-                        for (i in 1..count) pages.add(PageInfo(sourcePage = i))
-                    }
-                }
-                isLoading = false
-            }
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    it, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: Exception) {}
+            loadPdf(it)
         }
     }
 
